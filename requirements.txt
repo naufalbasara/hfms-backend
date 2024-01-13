@@ -1,5 +1,6 @@
 pandas
 numpy
 tensorflow
+scikit-learn
 pygsheets
 python-dotenv
