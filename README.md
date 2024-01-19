@@ -12,16 +12,16 @@
 
 1. gsheet_conn
 
-Establish live connection to google sheets
+    Establish live connection to google sheets
 
 2. preprocess_data
 
-Dataframe object enhancement of pandas dataframe
+    Dataframe object enhancement of pandas dataframe
 
 3. predictive_model
 
-TBD
+    TBD
 
 4. heuristic_model
 
-TBD
+    TBD

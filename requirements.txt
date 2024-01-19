@@ -4,3 +4,4 @@ tensorflow
 scikit-learn
 pygsheets
 python-dotenv
+google

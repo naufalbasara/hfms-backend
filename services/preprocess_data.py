@@ -21,6 +21,7 @@ class Dataframe:
 
         except:
             raise Exception('Not the valid argument to initialize object')
+        
         finally:
             return self.df.info()
 
@@ -30,6 +31,10 @@ class Dataframe:
             print(self.df[columns].isnull().sum())
         
         return self.df.isnull().sum()
+    
+    def check_outlier(self):
+        """to return summary of columns with outlier"""
+        return
     
     def to_df(self):
         """returning dataframe object"""
