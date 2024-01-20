@@ -1,7 +1,10 @@
 pandas
 numpy
-tensorflow
+matplotlib
+tensorflow-macos
 scikit-learn
 pygsheets
 python-dotenv
-google
+tensorflow-datasets
+Pillow
+scipy
