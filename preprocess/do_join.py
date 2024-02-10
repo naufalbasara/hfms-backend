@@ -3,6 +3,8 @@ from preprocess.preprocess_data import Dataframe
 import os, pandas as pd
 from dotenv import load_dotenv
 
+load_dotenv()
+
 def variable_mapping(variable_file_sheet_key='1AZrKKjabT-tRUceCXFq8BA_aHQQTUNC0Mc5mKEo224I'):
     """To make a dictionary of variable name"""
     variable_to_description = {}
@@ -15,37 +17,8 @@ def variable_mapping(variable_file_sheet_key='1AZrKKjabT-tRUceCXFq8BA_aHQQTUNC0M
 
     return variable_to_description
 
-def do_join():
-    # get the environment variables
-    drive_path = os.getenv('DRIVE_PATH')
-    data = None
-
-    # loop through folder of survey variable type (demographic, laboratory, questionnaire, etc.)
-    for survey_type in os.listdir(os.path.join(drive_path, 'Dataset/Raw CSV')):
-        print(f'Extracting data from folder {survey_type}...\n')
-        type_path = os.path.join(drive_path, 'Dataset/Raw CSV', survey_type)
-
-        # loop through files in current survey type
-        for dataset in os.listdir(type_path):
-            dataset_path = os.path.join(type_path, dataset)
-            try:
-                if type(data) == type(None):
-                    print(f"Initializing dataset with {dataset}")
-                    data = Dataframe(dataset_path, 'csv')
-                    continue
-                
-                df = pd.read_csv(dataset_path)
-                data.join(df, on='SEQN')
-            except Exception as error:
-                print(f"[ERROR]: on file {dataset}\n\tYIELD: {error}")
-    
-    print(data.null_summary())
-
-    return
-
 if __name__ == '__main__':
-    load_dotenv()
-    drive_path = os.getenv('DRIVE_PATH')
+    drive_path = '/Users/naufalbasara/naufalrb19@gmail.com - Google Drive/My Drive/Kuliah/Tugas Akhir/Final Project Shared Folder'
     combined_sheet = GSheet('1U-M35MU4VLXQTtSWkM9xddJAAeh6Z7bjGZOwwPZGnS4')
     variable_list_sheet = GSheet('1AZrKKjabT-tRUceCXFq8BA_aHQQTUNC0Mc5mKEo224I')
     folder_path = os.path.join(drive_path, 'Dataset/Raw CSV/')
@@ -71,33 +44,45 @@ if __name__ == '__main__':
     # e.g. Demographic -> Demographic_Combined
     # e.g. Dietary1, Dietary2 -> Dietary_Combined
     print()
+    combined_all = None
     for name, files in file_used.items():
         combined = None
         combined_name = name
-        count = 1
         print(f'Merging all files in {name}...')
-
         
-        for file in files:
-            file_code = f'{name[:5]}{count}'
-            file_path = os.path.join(folder_path, name, f'{file.strip()}.csv')
-            df = pd.read_csv(file_path, encoding="windows-1252")
-            old_ = df.columns
-            new_ = [*df.columns]
-            new_.remove('SEQN')
-            new_ = [*map(lambda x: f'{file_code}_{x}', new_)]
-            new_.insert(0, 'SEQN')
+        for count, file in enumerate(files):
+            try:
+                file_code = f'{name[:5]}{count+1}'
+                file_path = os.path.join(folder_path, name, f'{file.strip()}.csv')
+                df = pd.read_csv(file_path)
 
-            column_mapping = dict(map(lambda x,y: (x,y), old_, new_))
-            
-            df.rename(columns=column_mapping, inplace=True)
+                used_variables = variable_list[(variable_list['name'] == name) & (variable_list['title'] == file)]['variable'].tolist()
+                df = df.loc[:, used_variables]
 
-            if type(combined) == type(None):
-                combined = df
-                continue
+                old_ = df.columns
+                new_ = [*df.columns]
+                new_.remove('SEQN')
+                new_ = [*map(lambda x: f'{file_code}_{x}', new_)]
+                new_.insert(0, 'SEQN')
 
-            combined = pd.merge(combined, df, how='outer', on='SEQN')
-            count += 1
+                column_mapping = dict(map(lambda x,y: (x,y), old_, new_))
+                
+                # rename all columns according to the survey type
+                df.rename(columns=column_mapping, inplace=True)
+
+                if type(combined) == type(None):
+                    combined = df
+                    continue
+
+                combined = pd.merge(combined, df, how='outer', on='SEQN')
+            except Exception as e:
+                print(f"[FAILED]: Error in file {file}, {e}")
+        
+        if type(combined_all) == type(None):
+            combined_all = combined
+            continue
+        
+        combined_all = pd.merge(combined_all, combined, how='outer', on='SEQN')
 
         print(f'Merging files in {name} completed.')
         print()
@@ -112,5 +97,16 @@ if __name__ == '__main__':
             print("File stored.")
         
         print(f'---\t\t{name} COMPLETED\t\t---')
-        print('\n\n')
-        
+    
+    try:
+        combined_sheet.trunc_ins('ALL', combined_all)
+        print("Successfully updated to sheets \"ALL\"")
+    except:
+        print("[FAILED]: Unable to store Combined_All in sheet..")
+        print("Proceed to store in drive under the folder Dataset/Merged_Backup...")
+        combined_all.to_csv(os.path.join(drive_path, 'Dataset/Merged_Backup', f'Combined_All.csv'))
+        print("All combination file stored.")
+    
+
+    print(f'---\t\tALL COMPLETED\t\t---')
+    print('\n\n')
