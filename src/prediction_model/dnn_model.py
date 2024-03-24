@@ -36,19 +36,17 @@ def predictive_model(input_shape, learning_rate=0.001):
 
     return model
 
-def train_model(X_train, y_train, X_test, y_test):
+def train_model(X_train, y_train, X_test, y_test, epochs=30):
     model = predictive_model()
 
     history = model.fit(
         X_train, y_train,
-        epochs=30,
+        epochs=epochs,
         validation_date=(X_test, y_test),
         callbacks=[CustomCallback()]
         )
-    
-    plot_learning_curve(history)
 
-    return model
+    return model, history
 
 def plot_learning_curve(history):
     acc = history.history['accuracy']
