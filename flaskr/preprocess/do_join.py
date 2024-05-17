@@ -1,7 +1,7 @@
 from tools.gsheet_conn import GSheet
-from preprocess.preprocess_data import Dataframe
-import os, pandas as pd
+import os, pandas as pd, json
 from dotenv import load_dotenv
+from pprint import pprint
 
 load_dotenv()
 
@@ -21,7 +21,7 @@ def join(how, drive_path, data_folder_path, version):
     variable_list_sheet = GSheet('1AZrKKjabT-tRUceCXFq8BA_aHQQTUNC0Mc5mKEo224I')
     result_combined_sheet = GSheet('1U-M35MU4VLXQTtSWkM9xddJAAeh6Z7bjGZOwwPZGnS4')
     # log_sheet = GSheet('1rY5qjPzRNPcjzojSGvCyY-Gzj4-KD3oPAuVHviiVW2A')
-    
+    all_columns = {}
     try:
         print(f'-----\t\tPROCESS STARTED\t\t-----')
         file_used = {}
@@ -37,14 +37,12 @@ def join(how, drive_path, data_folder_path, version):
                 file_used[row['name']] = []
                 
             if row['title'] not in file_used[row['name']]:
-                if how in ['diet_all', 'diet_aggregated', 'diet_separated']:
+                if row['title'] in ['Dietary Interview - Individual Foods, First Day', 'Dietary Interview - Individual Foods, Second Day'] and how == 'diet_ignored':
+                    # skipped the data for respondent daily food consumption and only take the daily nutrition
+                    continue
+                else:
                     # do normal join
                     file_used[row['name']].append(row['title'])
-
-                elif how == 'diet_ignored':
-                    # skipped the data for respondent daily food consumption and only take the daily nutrition
-                    if row['title'] in ['Dietary Interview - Individual Foods, First Day', 'Dietary Interview - Individual Foods, Second Day']:
-                        continue
 
         print("Done creating list for used files.\n")
             
@@ -63,7 +61,7 @@ def join(how, drive_path, data_folder_path, version):
                     file_path = os.path.join(data_folder_path, name, f'{file.strip()}.csv')
                     df = pd.read_csv(file_path)
 
-                    used_variables = variable_list[(variable_list['name'] == name) & (variable_list['title'] == file)]['variable'].tolist()
+                    used_variables = [*map(lambda x: x.upper(), variable_list[(variable_list['name'] == name) & (variable_list['title'] == file)]['variable'].tolist())]
                     df = df.loc[:, used_variables]
 
                     # join on the user's input
@@ -84,7 +82,7 @@ def join(how, drive_path, data_folder_path, version):
                     new_.insert(0, 'SEQN')
 
                     column_mapping = dict(map(lambda x,y: (x,y), old_, new_))
-                        
+                    all_columns[file_code] = column_mapping
                     # rename all columns according to the survey type
                     df.rename(columns=column_mapping, inplace=True)
 
@@ -121,8 +119,13 @@ def join(how, drive_path, data_folder_path, version):
             print("Storing all combined file in drive...")
             combined_all.to_csv(os.path.join(drive_path, 'Dataset/Data Versioning', f'Combined_All_V{version}.csv'))
             print("All combination file stored in drive under the folder Dataset/Data Versioning.")
-        except:
-            print(f"[FAILED]: Unable to store Combined_All_V{version} in sheet..")
+        except Exception:
+            raise Exception
+
+        print("\nStored column mapping to json.\n")
+        with open('column_mapping_ignored_diet.json', 'a') as json_file:
+            json.dump(all_columns, json_file)
+        print("Column mapping stored to json.\n")
 
         print(f'-----\t\t$PROCESS COMPLETED$\t\t-----')
         print('\n\n')

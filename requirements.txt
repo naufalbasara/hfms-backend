@@ -8,3 +8,5 @@ python-dotenv
 tensorflow-datasets
 Pillow
 scipy
+Flask
+joblib

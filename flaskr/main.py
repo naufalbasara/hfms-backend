@@ -1,7 +1,6 @@
 import os, pandas as pd
 
 from tools.gsheet_conn import GSheet
-from preprocess.preprocess_data import Dataframe
 from preprocess.do_join import join
 from dotenv import load_dotenv
 
@@ -29,4 +28,4 @@ if __name__ == '__main__':
 
 
     # Join all the data from NHANES
-    join(how='diet_aggregated', drive_path=drive_path, data_folder_path=folder_path, version=1)
+    join(how='diet_ignored', drive_path=drive_path, data_folder_path=folder_path, version=5)
