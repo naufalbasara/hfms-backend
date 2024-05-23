@@ -10,3 +10,5 @@ Pillow
 scipy
 Flask
 joblib
+googletrans
+firebase-admin

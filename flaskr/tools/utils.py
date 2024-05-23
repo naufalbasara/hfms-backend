@@ -31,8 +31,8 @@ def to_interval(interval_str:str) -> pd.Interval:
 
     return pd.Interval(left=left_value, right=right_value, closed=closed)
 
-def discretize(value, column):
-    var_path = os.path.join(get_rootdir(), 'flaskr/optimization_model/data/variable_discrete_value.json')
+def discretize(value, column, version:int):
+    var_path = os.path.join(get_rootdir(), f'flaskr/optimization_model/metadata/v{version}/v{version}_variable_discrete_value.json')
     with open(var_path, 'r') as json_file:
         variable_discrete_val = json.load(json_file)
 
@@ -54,8 +54,8 @@ def discretize(value, column):
             return value
         
 
-def preprocess_pipeline(scaler_file_path:str, characteristic:np.ndarray, lifestyle:np.ndarray):
-    var_path = os.path.join(get_rootdir(), 'flaskr/optimization_model/data/columns_order-v2.json')
+def preprocess_pipeline(scaler_file_path:str, characteristic:np.ndarray, lifestyle:np.ndarray, version:int):
+    var_path = os.path.join(get_rootdir(), f'flaskr/optimization_model/metadata/v{version}/v{version}_columns_order.json')
     discreted_values = []
     with open(var_path, 'r') as json_file:
         column_order = json.load(json_file)
@@ -67,7 +67,7 @@ def preprocess_pipeline(scaler_file_path:str, characteristic:np.ndarray, lifesty
     # encode to discretize lifestyle value
     for index, ls_value in enumerate(lifestyle[0]):
         try:
-            discreted_value = discretize(ls_value, [*lifestyle_order.keys()][index])
+            discreted_value = discretize(ls_value, [*lifestyle_order.keys()][index], version)
             discreted_values.append(discreted_value)
         except Exception as e:
             print(e)

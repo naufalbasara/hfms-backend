@@ -3,6 +3,10 @@ from datetime import date
 from tools.utils import get_rootdir
 
 class GA:
+    """
+    Class for genetic algorithm lifestyle recommendation, stored preprocessing pipeline and ML model to predict
+    likeliness of someone having a heart failure.
+    """
     def __init__(
             self,
             lifestyle_genes:dict,
@@ -11,7 +15,9 @@ class GA:
             population_size:int=25,
             generations:int=30,
             mutation_probability:float=0.2,
-            model_path:str=''
+            model_path:str='',
+            scaler_path:str='',
+            version:int=1
             ) -> None:
         self.__genes = lifestyle_genes
         self.__characteristic = characteristic
@@ -21,8 +27,14 @@ class GA:
         self.__generations = generations
         self.__mutation_probability = mutation_probability
         self.__model = tf.keras.models.load_model(model_path)
-        self.__current_risk = self.__predict(self.__dict_to_arr(current_lifestyle))
+
+        # preprocess characteristic and lifestyle
+        self.preprocess_pipeline(scaler_path)
+        self.__current_risk = self.__predict(self.__current_lifestyle_arr)
         self.__best_result = self.__current_risk
+        self.__version = version
+
+        print(self.__current_risk)
 
     def __generate_individual(self):
         individual_lifestyle = {}
@@ -145,7 +157,7 @@ class GA:
     def __translate_lifestyle(self, lifestyle:np.ndarray, ls_risk:float):
         lifestyle_dict = {}
         lifestyle_dict['lifestyle'] = {}
-        ls_description_path = os.path.join(get_rootdir(), 'flaskr/optimization_model/data/lifestyle_description.json')
+        ls_description_path = os.path.join(get_rootdir(), f'flaskr/optimization_model/metadata/v{self.__version}/v{self.__version}_lifestyle_description.json')
         with open(ls_description_path, 'r') as json_file:
             lifestyle_description = json.load(json_file)
 
@@ -170,7 +182,7 @@ class GA:
                 'comparison': existingComparison,
                 'changeStatus': f'{changed}'
                 }
-
+        lifestyle_dict['currentLifestyle'] = self.__current_lifestyle
         lifestyle_dict['currentRisk'] = self.__current_risk
         lifestyle_dict['riskAfterRecommendation'] = ls_risk
         lifestyle_dict['riskReduction'] = self.__current_risk - ls_risk
@@ -240,3 +252,10 @@ class GA:
                 print(f'Generation {generation+1} ==> \n\tRisk: {self.__best_result}\n\tLifestyle: {self.__best_lifestyle}\n')
 
         return self.__translate_lifestyle(self.__best_lifestyle, self.__best_result), history
+    
+class GApp(GA):
+    """
+    App version class for genetic algorithm lifestyle recommendation, stored preprocessing pipeline and ML model to predict
+    likeliness of someone having a heart failure.
+    """
+    pass
