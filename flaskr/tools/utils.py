@@ -7,6 +7,12 @@ def get_rootdir() -> str:
 
     return rootdir
 
+def get_certificate() -> str:
+    root_dir = get_rootdir()
+    cert_path = os.path.join(root_dir, 'client_secret/PulseWise_secret.json')
+
+    return cert_path
+
 def load_model(model_path:str):
     """path to saved model with h5 format"""
     model = tf.keras.models.load_model(model_path)
