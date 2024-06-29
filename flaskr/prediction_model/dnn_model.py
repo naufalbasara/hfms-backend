@@ -13,31 +13,33 @@ from keras.optimizers import (
 
 class CustomCallback(tf.keras.callbacks.Callback):
     def on_epoch_end(self, epoch, logs={}):
-        desired_metrics = 0.8
-        if logs.get('accuracy') > desired_metrics and logs.get('val_accuracy') > desired_metrics:
-            print(f"Desired metrics reached with accuracy {logs.get('accuracy')}. Stopping training.. ")
-            self.model.stop_training=True
-        return
+        if(logs.get('val_accuracy') >= 0.975 or logs.get('loss') <= 0.015):
+            # Stop if threshold is met
+            print(f"\nThreshold met! until epoch {epoch}")
+            self.model.stop_training = True
 
-def predictive_model(input_shape, learning_rate=0.001):
-    input_layer = tf.keras.layers.Input(shape=(input_shape))
-    hidden_layer_1 = Bidirectional(LSTM(32))(input_layer)
-    hidden_layer_2 = Bidirectional(LSTM(32))(hidden_layer_1)
-    hidden_layer_3 = Flatten()(hidden_layer_2)
-    hidden_layer_4 = Dense(units=128)(hidden_layer_3)
-    output_layeur = Dense(units=1, activation=tf.nn.sigmoid())(hidden_layer_4)
+def create_model(input_shape, optimizer='adam'):
+    model = tf.keras.models.Sequential([
+        tf.keras.layers.Input(shape=(input_shape)),
+        tf.keras.layers.LSTM(64, return_sequences=True),
+        tf.keras.layers.LSTM(32),
+        tf.keras.layers.Flatten(),
+        tf.keras.layers.Dense(64, activation=tf.nn.relu),
+        tf.keras.layers.Dropout(0.1),
+        tf.keras.layers.Dense(32, activation=tf.nn.relu, kernel_regularizer=tf.keras.regularizers.L2(l2=0.01)),
+        tf.keras.layers.Dense(16, activation=tf.nn.relu),
+        tf.keras.layers.Dense(2, activation=tf.nn.softmax)
+    ])
 
-    model = tf.keras.Model(input_layer, output_layeur)
-    model.compile(
-        loss='binary_crossentropy',
-        optimizer=Adam(learning_rate=learning_rate),
-        metrics=['accuracy']
-    )
+    model.compile(optimizer=optimizer,
+                    loss='sparse_categorical_crossentropy',
+                    metrics=['accuracy']
+                  )
 
     return model
 
 def train_model(X_train, y_train, X_test, y_test, epochs=30):
-    model = predictive_model()
+    model = create_model()
 
     history = model.fit(
         X_train, y_train,

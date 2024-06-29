@@ -29,7 +29,9 @@ class GA:
         self.__model = tf.keras.models.load_model(model_path)
 
         # preprocess characteristic and lifestyle
+        print('preprocessing')
         self.preprocess_pipeline(scaler_path)
+        print('predicting')
         self.__current_risk = self.__predict(self.__current_lifestyle_arr)
         self.__best_result = self.__current_risk
         self.__version = version
@@ -37,6 +39,9 @@ class GA:
         print(self.__current_risk)
 
     def __generate_individual(self):
+        """
+        Generating individual of lifestyle component in early iteration population
+        """
         individual_lifestyle = {}
         individual_lifestyle_arr = []
 
@@ -93,6 +98,10 @@ class GA:
                 return value
 
     def __generate_populations(self) -> list:
+        """
+        Generating populations of lifestyle components
+        Returned a list of generated individuals
+        """
         populations = []
         populations.append(self.__current_lifestyle_arr)
         start = 0 if len(populations) == 0 else 1
@@ -120,10 +129,8 @@ class GA:
                 discreted_values.append(ls_value)
 
         lifestyle = np.expand_dims(np.array(discreted_values).astype(float), axis=0)
-                
-        for index, ls_component_name in enumerate(ordered_lifestyle_col):
-            if str(lifestyle[0, index]) in self.__genes[ls_component_name]:
-                continue
+        for idx, col in enumerate(self.__current_lifestyle.keys()):
+            self.__current_lifestyle[col] = discreted_values[idx]
 
         # feature scaling
         scaler = joblib.load(scaler_file_path)
@@ -178,11 +185,12 @@ class GA:
 
             lifestyle_dict['lifestyle'][ls_component] = {
                 'description': lifestyle_description[ls_component],
+                'currentValue': self.__genes[ls_component][str(current_ls_value)],
                 'recommendedValueInterval': self.__genes[ls_component][str(value)],
+                'codeValue': str(value),
                 'comparison': existingComparison,
                 'changeStatus': f'{changed}'
                 }
-        lifestyle_dict['currentLifestyle'] = self.__current_lifestyle
         lifestyle_dict['currentRisk'] = self.__current_risk
         lifestyle_dict['riskAfterRecommendation'] = ls_risk
         lifestyle_dict['riskReduction'] = self.__current_risk - ls_risk
@@ -252,10 +260,3 @@ class GA:
                 print(f'Generation {generation+1} ==> \n\tRisk: {self.__best_result}\n\tLifestyle: {self.__best_lifestyle}\n')
 
         return self.__translate_lifestyle(self.__best_lifestyle, self.__best_result), history
-    
-class GApp(GA):
-    """
-    App version class for genetic algorithm lifestyle recommendation, stored preprocessing pipeline and ML model to predict
-    likeliness of someone having a heart failure.
-    """
-    pass

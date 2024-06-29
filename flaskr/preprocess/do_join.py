@@ -27,7 +27,6 @@ def join(how, drive_path, data_folder_path, version):
         file_used = {}
 
         # Get all the used variable files in a dictionary
-        # do something here..
         variable_list = variable_list_sheet.to_df(variable_list_sheet.open_wks('Sheet1'))
         variable_list = variable_list[variable_list['is_used'] == 'TRUE']
 

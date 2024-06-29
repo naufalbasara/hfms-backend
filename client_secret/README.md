@@ -1,0 +1,1 @@
+Store client secret in json file for connection with Google APIs (Firebase, Spreadsheets, etc.)

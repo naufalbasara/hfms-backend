@@ -2,6 +2,7 @@ import joblib, os, tensorflow as tf, sklearn, numpy as np, pandas as pd, json, w
 import optimization_model.genetic_algorithm as optimization
 
 from flask import Flask, request
+from flask_cors import CORS, cross_origin
 from datetime import date
 from tools.utils import get_rootdir, get_certificate, preprocess_pipeline, load_model
 from ext.firebase_connection import FireBase
@@ -10,13 +11,14 @@ from ext.preprocess import PreProcess
 warnings.filterwarnings("ignore")
 
 app = Flask(__name__)
+app.config['CORS_HEADERS'] = 'Content-Type'
+CORS(app,resources={r"/*": {"origins": "*"}})
 
 root_dir = get_rootdir()
 firebase_dir = get_certificate()
 
-def get_metadata_version(version:int, call_type:str) -> dict:
+def get_metadata_version(version, call_type:str) -> dict:
     global root_dir
-    assert type(version) == int
 
     version_text = f'v{version}'
     
@@ -35,6 +37,13 @@ def get_metadata_version(version:int, call_type:str) -> dict:
                 'columns_order_path': os.path.join(root_dir, f'flaskr/optimization_model/metadata/{version_text}/{version_text}_columns_order.json'),
                 'genes_path': os.path.join(root_dir, f'flaskr/optimization_model/metadata/{version_text}/{version_text}_variable_discrete_value.json'),
                 'model_path': os.path.join(root_dir, 'flaskr/prediction_model/model_cnn_app.h5')
+            },
+            'v3': {
+                'description': 'For thesis final project purposes',
+                'scaler_path': os.path.join(root_dir, f'flaskr/scaler_model/{version_text}_standard_scaler.gz'),
+                'columns_order_path': os.path.join(root_dir, f'flaskr/optimization_model/metadata/{version_text}/{version_text}_columns_order.json'),
+                'genes_path': os.path.join(root_dir, f'flaskr/optimization_model/metadata/{version_text}/{version_text}_variable_discrete_value.json'),
+                'model_path': os.path.join(root_dir, 'flaskr/prediction_model/model_lstm_v3.h5')
             }
         },
         'app': {
@@ -59,21 +68,12 @@ def get_metadata_version(version:int, call_type:str) -> dict:
 
 @app.route('/', methods=['GET'])
 def index():
-    response_json = {}
-    path_obj = get_metadata_version(0, 'index')
-    for key in path_obj.keys(): 
-        response_json[key] = {}
-        for version in path_obj[key].keys():
-            response_json[key][version] = {
-                'description': getattr(path_obj[key][version], 'description', None),
-                'predictions': f'/{version}/{"app/" if key=="app" else ""}predictions',
-                'recommendations': f'/{version}/{"app/" if key=="app" else ""}recommendations',
-            }
-    
-    return response_json
+    with open(os.path.join(get_rootdir(),'flaskr/variable_v3.json'), 'r') as json_file:
+        return json.load(json_file)
 
 # ===================== FP Endpoints =====================
 @app.route('/v<int:version>/predictions/', methods=['GET', 'POST'])
+@cross_origin()
 def predict(version):
     # load configuration for relevant version
     assert type(version) == int and get_metadata_version(version, call_type='fp') != None
@@ -81,11 +81,20 @@ def predict(version):
     result_json = {}
     time_start = time.time()
     model = load_model(metadata['model_path'])
+    
+    try:
+        with open(metadata['columns_order_path'], 'r') as json_file:
+            json_f = str(json_file.read()).strip("'<>() ").replace('\'', '\"')
+            lifestyle_col = json.loads(json_f)['lifestyle']
+            characteristic_col = json.loads(json_f)['characteristic']
+    except Exception as e:
+        result_json['result'] = 'Metadata file not found.'
+        result_json['errorDetails'] = f'{e}'
+        result_json['status'] = 400
+        result_json['timeGenerated'] = str(date.today())
+        result_json['timeTaken'] = f'{time.time() - time_start} s'
 
-    with open(metadata['columns_order_path'], 'r') as json_file:
-        json_f = str(json_file.read()).strip("'<>() ").replace('\'', '\"')
-        lifestyle_col = json.loads(json_f)['lifestyle']
-        characteristic_col = json.loads(json_f)['characteristic']
+        return result_json, 400
     
     if request.method == 'POST':
         # load data from form / http post request
@@ -147,6 +156,7 @@ def predict(version):
         return result_json, 200
 
 @app.route('/v<int:version>/recommendations/', methods=['POST', 'GET'])
+@cross_origin()
 def recommendation(version):
     # load configuration for relevant version
     assert type(version) == int and get_metadata_version(version, call_type='fp') != None
@@ -155,10 +165,19 @@ def recommendation(version):
     result_json = {}
     time_start = time.time()
 
-    with open(metadata['columns_order_path'], 'r') as json_file:
-        json_f = str(json_file.read()).strip("'<>() ").replace('\'', '\"')
-        lifestyle_col = json.loads(json_f)['lifestyle']
-        characteristic_col = json.loads(json_f)['characteristic']
+    try:
+        with open(metadata['columns_order_path'], 'r') as json_file:
+            json_f = str(json_file.read()).strip("'<>() ").replace('\'', '\"')
+            lifestyle_col = json.loads(json_f)['lifestyle']
+            characteristic_col = json.loads(json_f)['characteristic']
+    except Exception as e:
+        result_json['result'] = 'Metadata file not found.'
+        result_json['errorDetails'] = f'{e}'
+        result_json['status'] = 400
+        result_json['timeGenerated'] = str(date.today())
+        result_json['timeTaken'] = f'{time.time() - time_start} s'
+
+        return result_json, 400
 
     if request.method == 'POST':
         # get all the data from form / http post request 
@@ -205,6 +224,7 @@ def recommendation(version):
 
             # get recommendation
             try:
+                print("recommending")
                 recommendation_result, history = recommendation.get_recommendation(verbose=0)
                 result_json['recommendationResult'] = recommendation_result
                 result_json['resultHistory'] = history
@@ -240,9 +260,9 @@ def recommendation(version):
 
 
 # ===================== Application Endpoints =====================
-# @app.route('/v<int:version>/app/recommendations/', methods=['POST'])
-# def app_recommendation(version):
-#     return
+@app.route('/v<int:version>/app/recommendations/', methods=['POST'])
+def app_recommendation(version):
+    return
 
 @app.route('/v<int:version>/app/predictions/', methods=['POST'])
 def app_predict(version):
@@ -252,10 +272,19 @@ def app_predict(version):
     time_start = time.time()
 
     if request.method == 'POST':
-        with open(metadata['columns_order_path'], 'r') as json_file:
-            json_f = str(json_file.read()).strip("'<>() ").replace('\'', '\"')
-            lifestyle_col = json.loads(json_f)['lifestyle']
-            characteristic_col = json.loads(json_f)['characteristic']
+        try:
+            with open(metadata['columns_order_path'], 'r') as json_file:
+                json_f = str(json_file.read()).strip("'<>() ").replace('\'', '\"')
+                lifestyle_col = json.loads(json_f)['lifestyle']
+                characteristic_col = json.loads(json_f)['characteristic']
+        except Exception as e:
+            response_json['result'] = 'Metadata file not found.'
+            response_json['errorDetails'] = f'{e}'
+            response_json['status'] = 400
+            response_json['timeGenerated'] = str(date.today())
+            response_json['timeTaken'] = f'{time.time() - time_start} s'
+
+            return response_json, 400
 
         # load data from form / http post request
         characteristic = {}
