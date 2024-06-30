@@ -11,8 +11,8 @@ from ext.preprocess import PreProcess
 warnings.filterwarnings("ignore")
 
 app = Flask(__name__)
-app.config['CORS_HEADERS'] = 'Content-Type'
-CORS(app,resources={r"/*": {"origins": "*"}})
+app.config['CORS_HEADERS'] = 'application/json'
+CORS(app,resources={r"*": {"origins": "*"}})
 
 root_dir = get_rootdir()
 firebase_dir = get_certificate()
@@ -67,13 +67,14 @@ def get_metadata_version(version, call_type:str) -> dict:
         return None
 
 @app.route('/', methods=['GET'])
+@cross_origin(origins='*')
 def index():
     with open(os.path.join(get_rootdir(),'flaskr/variable_v3.json'), 'r') as json_file:
         return json.load(json_file)
 
 # ===================== FP Endpoints =====================
 @app.route('/v<int:version>/predictions/', methods=['GET', 'POST'])
-@cross_origin()
+@cross_origin(origins='*')
 def predict(version):
     # load configuration for relevant version
     assert type(version) == int and get_metadata_version(version, call_type='fp') != None
@@ -156,7 +157,7 @@ def predict(version):
         return result_json, 200
 
 @app.route('/v<int:version>/recommendations/', methods=['POST', 'GET'])
-@cross_origin()
+@cross_origin(origins='*')
 def recommendation(version):
     # load configuration for relevant version
     assert type(version) == int and get_metadata_version(version, call_type='fp') != None
@@ -219,6 +220,7 @@ def recommendation(version):
                 mutation_probability=0.2,
                 model_path=metadata['model_path'],
                 scaler_path=metadata['scaler_path'],
+                for_app=False,
                 version=version
             )
 
@@ -261,10 +263,110 @@ def recommendation(version):
 
 # ===================== Application Endpoints =====================
 @app.route('/v<int:version>/app/recommendations/', methods=['POST'])
+@cross_origin(origins='*')
 def app_recommendation(version):
-    return
+    # load configuration for relevant version
+    assert type(version) == int and get_metadata_version(version, call_type='app') != None
+    metadata = get_metadata_version(version, call_type='app')
+
+    result_json = {}
+    time_start = time.time()
+
+    try:
+        with open(metadata['columns_order_path'], 'r') as json_file:
+            json_f = str(json_file.read()).strip("'<>() ").replace('\'', '\"')
+            lifestyle_col = json.loads(json_f)['lifestyle']
+            characteristic_col = json.loads(json_f)['characteristic']
+    except Exception as e:
+        result_json['result'] = 'Metadata file not found.'
+        result_json['errorDetails'] = f'{e}'
+        result_json['status'] = 400
+        result_json['timeGenerated'] = str(date.today())
+        result_json['timeTaken'] = f'{time.time() - time_start} s'
+
+        return result_json, 400
+
+    if request.method == 'POST':
+        # get all the data from form / http post request 
+        characteristic = {}
+        lifestyle = {}
+        request_data = request.get_json()
+
+        try:
+            for ls_col in lifestyle_col.keys():
+                lifestyle[ls_col] = float(request_data[ls_col])
+
+            for char_col in characteristic_col.keys():
+                if char_col == 'Quest16_MCQ160B': continue
+                characteristic[char_col] = request_data[char_col]
+
+            # get all the data to numpy
+            characteristic = np.expand_dims(np.array([*characteristic.values()]), axis=0)
+            current_lifestyle = lifestyle
+
+        except Exception as e:
+            result_json['result'] = 'There is something wrong with the data'
+            result_json['error'] = f'{e}'
+            result_json['status'] = 400
+            result_json['timeGenerated'] = str(date.today())
+            result_json['timeTaken'] = f'{time.time() - time_start} s'
+
+            return result_json, 400
+
+        with open(metadata['genes_path'], 'r') as json_file:
+            lifestyle_genes = json.load(json_file)
+        try:
+            # initiate model object
+            recommendation = optimization.GA(
+                lifestyle_genes=lifestyle_genes,
+                characteristic=characteristic,
+                current_lifestyle=current_lifestyle,
+                population_size=25,
+                generations=30,
+                mutation_probability=0.2,
+                model_path=metadata['model_path'],
+                scaler_path=metadata['scaler_path'],
+                for_app=True,
+                version=version
+            )
+
+            # get recommendation
+            try:
+                print("recommending")
+                recommendation_result, history = recommendation.get_recommendation(verbose=0)
+                result_json['recommendationResult'] = recommendation_result
+                result_json['resultHistory'] = history
+
+            except Exception as e:
+                result_json['errorDetails'] = f'Error while generating recommendation: {e}'
+                result_json['timeGenerated'] = str(date.today())
+                result_json['timeTaken'] = f'{time.time() - time_start} s'
+
+                return result_json, 400
+
+            result_json['status'] = 200
+            result_json['statusMessage'] = "Success retrieving recommendation data"
+            
+            return result_json, 200
+
+        except Exception as e:
+            result_json['result'] = 'There is something wrong with the data'
+            result_json['status'] = 400
+            result_json['errorDetails'] = f'{e}'
+            result_json['timeGenerated'] = str(date.today())
+            result_json['timeTaken'] = f'{time.time() - time_start} s'
+
+            return result_json, 400
+    
+    if request.method == 'GET':
+        result_json['acceptedDataScheme'] = {'lifestyle': lifestyle_col,
+                                             'characteristic': characteristic_col
+                                             }
+        
+        return result_json, 200
 
 @app.route('/v<int:version>/app/predictions/', methods=['POST'])
+@cross_origin(origins='*')
 def app_predict(version):
     metadata = get_metadata_version(version, call_type='app')
     response_json = {}
@@ -290,22 +392,24 @@ def app_predict(version):
         characteristic = {}
         lifestyle = {}
         user_id = request.get_json()['user_id']
+        print(user_id)
 
         # instantiate necessary object
         firebase = FireBase(firebase_dir)
         preprocess = PreProcess()
         cleaned_data = preprocess.preprocess(firebase.get_data(user_id))
+        print(cleaned_data)
     
         # map the data from POST request json data to relevant variables
         try:
             for ls_col in lifestyle_col.keys():
-                if cleaned_data[ls_col] == None: raise Exception(f'{ls_col} missing')
+                if cleaned_data[ls_col] == None: cleaned_data[ls_col] = 0
                 lifestyle[ls_col] = cleaned_data[ls_col]
 
             for char_col in characteristic_col.keys():
-                if cleaned_data[char_col] == None: raise Exception(f'{char_col} missing')
                 if char_col == 'Quest16_MCQ160B':
                     continue
+                if cleaned_data[char_col] == None: cleaned_data[char_col] = 0
                 characteristic[char_col] = cleaned_data[char_col]
 
             characteristic = np.expand_dims(np.array([*characteristic.values()]), axis=0)

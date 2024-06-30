@@ -17,7 +17,8 @@ class GA:
             mutation_probability:float=0.2,
             model_path:str='',
             scaler_path:str='',
-            version:int=1
+            version:int=1,
+            for_app=False
             ) -> None:
         self.__genes = lifestyle_genes
         self.__characteristic = characteristic
@@ -27,6 +28,7 @@ class GA:
         self.__generations = generations
         self.__mutation_probability = mutation_probability
         self.__model = tf.keras.models.load_model(model_path)
+        self.__for_app = for_app
 
         # preprocess characteristic and lifestyle
         print('preprocessing')
@@ -164,7 +166,7 @@ class GA:
     def __translate_lifestyle(self, lifestyle:np.ndarray, ls_risk:float):
         lifestyle_dict = {}
         lifestyle_dict['lifestyle'] = {}
-        ls_description_path = os.path.join(get_rootdir(), f'flaskr/optimization_model/metadata/v{self.__version}/v{self.__version}_lifestyle_description.json')
+        ls_description_path = os.path.join(get_rootdir(), f'flaskr/optimization_model/metadata/{"app/" if self.__for_app else ""}v{self.__version}/v{self.__version}_lifestyle_description.json')
         with open(ls_description_path, 'r') as json_file:
             lifestyle_description = json.load(json_file)
 

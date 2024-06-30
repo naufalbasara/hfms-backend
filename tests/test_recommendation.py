@@ -31,6 +31,7 @@ def statistics_test(case='positive'):
         
         data_json = {**lifestyle, **characteristic}
         res = requests.post(endpoint, json=data_json)
+        print(res.json())
 
         ls_res = res.json()['recommendationResult']['lifestyle']
         for col, ls in ls_res.items():
@@ -61,9 +62,6 @@ def statistics_test(case='positive'):
         plt.savefig(os.path.join(base_path, f'tests/test_result/{case}_{col}.png'))
         plt.close()
 
-    return
-
-def parameter_test():
     return
 
 if __name__ == '__main__':
