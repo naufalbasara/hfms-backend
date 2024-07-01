@@ -69,8 +69,9 @@ def get_metadata_version(version, call_type:str) -> dict:
 @app.route('/', methods=['GET'])
 @cross_origin(origins='*')
 def index():
-    with open(os.path.join(get_rootdir(),'flaskr/variable_v3.json'), 'r') as json_file:
-        return json.load(json_file)
+        return {
+            "Description": "Heart Failure Prediction and Lifestyle Recommendation System"
+        }, 200
 
 # ===================== FP Endpoints =====================
 @app.route('/v<int:version>/predictions/', methods=['GET', 'POST'])
@@ -185,6 +186,7 @@ def recommendation(version):
         characteristic = {}
         lifestyle = {}
         request_data = request.get_json()
+        request_headers = request.headers
 
         try:
             for ls_col in lifestyle_col.keys():
@@ -215,9 +217,9 @@ def recommendation(version):
                 lifestyle_genes=lifestyle_genes,
                 characteristic=characteristic,
                 current_lifestyle=current_lifestyle,
-                population_size=25,
-                generations=30,
-                mutation_probability=0.2,
+                population_size=int(request_headers['Population-Size']),
+                generations=int(request_headers['Generations']),
+                mutation_probability=float(request_headers['Mutation-Rate']),
                 model_path=metadata['model_path'],
                 scaler_path=metadata['scaler_path'],
                 for_app=False,

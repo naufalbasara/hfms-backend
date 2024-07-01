@@ -31,7 +31,6 @@ def statistics_test(case='positive'):
         
         data_json = {**lifestyle, **characteristic}
         res = requests.post(endpoint, json=data_json)
-        print(res.json())
 
         ls_res = res.json()['recommendationResult']['lifestyle']
         for col, ls in ls_res.items():
