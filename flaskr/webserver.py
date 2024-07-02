@@ -450,3 +450,6 @@ def app_recommendation(version):
     
     # return response_json
 # ===================== End of Application Endpoints =====================
+
+if __name__ == '__main__':
+    app.run(debug=True)
