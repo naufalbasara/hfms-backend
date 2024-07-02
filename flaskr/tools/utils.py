@@ -2,8 +2,12 @@ import joblib, tensorflow as tf, sklearn, numpy as np, pandas as pd, json, os, r
 
 def get_rootdir() -> str:
     cwd = os.path.abspath(os.getcwd())
-    end = re.search(r'hfms-backend', cwd).end()
-    rootdir = cwd[:end]
+    try:
+        end = re.search(r'flaskr', cwd).start()
+        rootdir = cwd[:end]
+    except:
+        end = re.search(r'hfms-backend', cwd).end()
+        rootdir = cwd[:end]
 
     return rootdir
 
