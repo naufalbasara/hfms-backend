@@ -24,33 +24,33 @@ def get_metadata_version(version, call_type:str) -> dict:
         'fp': {
             'v1': {
                 'description': 'For thesis final project purposes',
-                'scaler_path': f'flaskr/scaler_model/{version_text}_standard_scaler.gz',
-                'columns_order_path': f'flaskr/optimization_model/metadata/{version_text}/{version_text}_columns_order.json',
-                'genes_path': f'flaskr/optimization_model/metadata/{version_text}/{version_text}_variable_discrete_value.json',
-                'model_path': 'flaskr/prediction_model/model_cnn_v2-3.h5'
+                'scaler_path': f'scaler_model/{version_text}_standard_scaler.gz',
+                'columns_order_path': f'optimization_model/metadata/{version_text}/{version_text}_columns_order.json',
+                'genes_path': f'optimization_model/metadata/{version_text}/{version_text}_variable_discrete_value.json',
+                'model_path': 'prediction_model/model_cnn_v2-3.h5'
             },
             'v2': {
                 'description': 'For thesis final project (app) testing purposes',
-                'scaler_path': f'flaskr/scaler_model/{version_text}_standard_scaler.gz',
-                'columns_order_path': f'flaskr/optimization_model/metadata/{version_text}/{version_text}_columns_order.json',
-                'genes_path': f'flaskr/optimization_model/metadata/{version_text}/{version_text}_variable_discrete_value.json',
-                'model_path': 'flaskr/prediction_model/model_cnn_app.h5'
+                'scaler_path': f'scaler_model/{version_text}_standard_scaler.gz',
+                'columns_order_path': f'optimization_model/metadata/{version_text}/{version_text}_columns_order.json',
+                'genes_path': f'optimization_model/metadata/{version_text}/{version_text}_variable_discrete_value.json',
+                'model_path': 'prediction_model/model_cnn_app.h5'
             },
             'v3': {
                 'description': 'For thesis final project purposes',
-                'scaler_path': f'flaskr/scaler_model/{version_text}_standard_scaler.gz',
-                'columns_order_path': f'flaskr/optimization_model/metadata/{version_text}/{version_text}_columns_order.json',
-                'genes_path': f'flaskr/optimization_model/metadata/{version_text}/{version_text}_variable_discrete_value.json',
-                'model_path': 'flaskr/prediction_model/model_lstm_v3.h5'
+                'scaler_path': f'scaler_model/{version_text}_standard_scaler.gz',
+                'columns_order_path': f'optimization_model/metadata/{version_text}/{version_text}_columns_order.json',
+                'genes_path': f'optimization_model/metadata/{version_text}/{version_text}_variable_discrete_value.json',
+                'model_path': 'prediction_model/model_lstm_v3.h5'
             }
         },
         'app': {
             'v1': {
                 'description': 'For application purposes, only receive user_id in a JSON payload',
-                'scaler_path': f'flaskr/scaler_model/app/{version_text}_standard_scaler.gz',
-                'columns_order_path': f'flaskr/optimization_model/metadata/app/{version_text}/{version_text}_columns_order.json',
-                'genes_path': f'flaskr/optimization_model/metadata/app/{version_text}/{version_text}_variable_discrete_value.json',
-                'model_path': 'flaskr/prediction_model/model_cnn_app_v2.h5'
+                'scaler_path': f'scaler_model/app/{version_text}_standard_scaler.gz',
+                'columns_order_path': f'optimization_model/metadata/app/{version_text}/{version_text}_columns_order.json',
+                'genes_path': f'optimization_model/metadata/app/{version_text}/{version_text}_variable_discrete_value.json',
+                'model_path': 'prediction_model/model_cnn_app_v2.h5'
             }
         }
     }
