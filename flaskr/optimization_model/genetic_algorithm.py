@@ -166,7 +166,7 @@ class GA:
     def __translate_lifestyle(self, lifestyle:np.ndarray, ls_risk:float):
         lifestyle_dict = {}
         lifestyle_dict['lifestyle'] = {}
-        ls_description_path = os.path.join(get_rootdir(), f'flaskr/optimization_model/metadata/{"app/" if self.__for_app else ""}v{self.__version}/v{self.__version}_lifestyle_description.json')
+        ls_description_path = f'flaskr/optimization_model/metadata/{"app/" if self.__for_app else ""}v{self.__version}/v{self.__version}_lifestyle_description.json'
         with open(ls_description_path, 'r') as json_file:
             lifestyle_description = json.load(json_file)
 
