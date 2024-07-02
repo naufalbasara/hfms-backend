@@ -9,7 +9,7 @@ venv
 *.pyc
 
 instance/
-requirements.txt
+development_requirements.txt
 
 .pytest_cache/
 .coverage
