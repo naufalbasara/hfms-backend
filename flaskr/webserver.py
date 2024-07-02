@@ -52,7 +52,7 @@ def get_metadata_version(version, call_type:str) -> dict:
                 'scaler_path': os.path.join(root_dir, f'flaskr/scaler_model/app/{version_text}_standard_scaler.gz'),
                 'columns_order_path': os.path.join(root_dir, f'flaskr/optimization_model/metadata/app/{version_text}/{version_text}_columns_order.json'),
                 'genes_path': os.path.join(root_dir, f'flaskr/optimization_model/metadata/app/{version_text}/{version_text}_variable_discrete_value.json'),
-                'model_path': os.path.join(root_dir, 'flaskr/prediction_model/model_cnn_app.h5')
+                'model_path': os.path.join(root_dir, 'flaskr/prediction_model/model_cnn_app_v2.h5')
             }
         }
     }
@@ -217,9 +217,9 @@ def recommendation(version):
                 lifestyle_genes=lifestyle_genes,
                 characteristic=characteristic,
                 current_lifestyle=current_lifestyle,
-                population_size=int(request_headers['Population-Size']),
-                generations=int(request_headers['Generations']),
-                mutation_probability=float(request_headers['Mutation-Rate']),
+                population_size=30,
+                generations=30,
+                mutation_probability=0.1,
                 model_path=metadata['model_path'],
                 scaler_path=metadata['scaler_path'],
                 for_app=False,
@@ -323,9 +323,9 @@ def app_recommendation(version):
                 lifestyle_genes=lifestyle_genes,
                 characteristic=characteristic,
                 current_lifestyle=current_lifestyle,
-                population_size=25,
+                population_size=30,
                 generations=30,
-                mutation_probability=0.2,
+                mutation_probability=0.1,
                 model_path=metadata['model_path'],
                 scaler_path=metadata['scaler_path'],
                 for_app=True,

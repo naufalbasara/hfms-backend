@@ -113,7 +113,6 @@ if __name__ == '__main__':
     data_path = os.path.join(base_path, 'tests/test_data/')
 
     data = pd.read_csv(os.path.join(data_path, 'positive_case.csv'))
-
     try:
         data = data.set_index('SEQN', drop=True)
         data['Quest16_MCQ160B'] = data['Quest16_MCQ160B'].astype(int)

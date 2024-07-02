@@ -22,7 +22,7 @@ class PreProcess:
 
     def get_age(self, birth_date_str):
         try:
-            birth_date = datetime.strptime(birth_date_str, "%d %B %Y").date()
+            birth_date = datetime.strptime(birth_date_str, "%d %M %Y").date()
             today = date.today()
 
             age = today.year - birth_date.year
