@@ -116,6 +116,23 @@ class PreProcess:
                 return nutrient
         except:
             pass
+
+        # Second B Iteration: Check Food Name from Survey Food type, sample 30 hit
+        try:
+            nutrients, num_hits = self.food_central.get_nutrients(food_name, data_type=['Survey (FNDDS)'])
+            if(num_hits > 0):
+                nutrient = nutrients[0]
+                for i, val in enumerate(random.sample(nutrients, num_samples=min(num_samples, num_hits))):
+                    if(i == 0):
+                        continue
+                    
+                    list_of_key = list(set(nutrient['foodNutrients'])+set(val['foodNutrients']))
+                    for key in list_of_key:
+                        nutrient['foodNutrients'][key] = nutrient['foodNutrients'].get(key, 0) + val['foodNutrients'].get(key, 0)
+                    
+                return nutrient
+        except:
+            pass
         
         # Third Iteration: Check Food Name from Foundation type, by individual words (get the fewest non zero hit)
         try:
