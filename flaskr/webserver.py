@@ -6,7 +6,7 @@ from flask_cors import CORS, cross_origin
 from datetime import date
 from tools.utils import get_rootdir, get_certificate, preprocess_pipeline, load_model
 from ext.firebase_connection import FireBase
-from ext.preprocess import PreProcess
+from ext.preprocess_webserver import PreProcess
 
 warnings.filterwarnings("ignore")
 
@@ -101,6 +101,9 @@ def predict(version):
         characteristic = {}
         lifestyle = {}
         request_data = request.get_json()
+
+        preprocess = PreProcess()
+        request_data = preprocess.preprocess(request_data)
 
         # map the data from POST request json data to relevant variables
         try:
