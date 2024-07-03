@@ -22,7 +22,7 @@ class PreProcess:
 
     def get_age(self, birth_date_str):
         try:
-            birth_date = datetime.strptime(birth_date_str, "%d %M %Y").date()
+            birth_date = datetime.strptime(birth_date_str, "%d %B %Y").date()
             today = date.today()
 
             age = today.year - birth_date.year
@@ -103,6 +103,23 @@ class PreProcess:
         # Second Iteration: Check Food Name from Branded type, sample 30 hit
         try:
             nutrients, num_hits = self.food_central.get_nutrients(food_name, data_type=['Branded'])
+            if(num_hits > 0):
+                nutrient = nutrients[0]
+                for i, val in enumerate(random.sample(nutrients, num_samples=min(num_samples, num_hits))):
+                    if(i == 0):
+                        continue
+                    
+                    list_of_key = list(set(nutrient['foodNutrients'])+set(val['foodNutrients']))
+                    for key in list_of_key:
+                        nutrient['foodNutrients'][key] = nutrient['foodNutrients'].get(key, 0) + val['foodNutrients'].get(key, 0)
+                    
+                return nutrient
+        except:
+            pass
+
+        # Second B Iteration: Check Food Name from Survey Food type, sample 30 hit
+        try:
+            nutrients, num_hits = self.food_central.get_nutrients(food_name, data_type=['Survey (FNDDS)'])
             if(num_hits > 0):
                 nutrient = nutrients[0]
                 for i, val in enumerate(random.sample(nutrients, num_samples=min(num_samples, num_hits))):
@@ -256,15 +273,19 @@ class PreProcess:
     def get_bmi(self, weight, height):
         if(weight == None or height == None):
             return None
-        return weight/(height**2)
+        return weight/((height/100)**2)
     
-    def is_having_pain(self, symptoms):
-        if(len(symptoms) == 0):
+    def is_having_pain(self, symptoms_list):
+        if(len(symptoms_list) == 0):
             return 9
 
-        for symptom in symptoms:
-            if symptom.get('name') == 'Pain in Chest Area':
-                return 1
+        for symptoms in symptoms_list:
+            try:
+                for symptom in symptoms:
+                    if symptom.get('name') == 'Pain in Chest Area':
+                        return 1
+            except:
+                pass
         
         return 2
 
@@ -320,24 +341,18 @@ class PreProcess:
         if(activities == None):
             activities = []
         activity = {
-            'Quest19_PAD615': self.get_vigorous_activity_minute(activities)
+            'Quest19_VigorousActivity': self.get_vigorous_activity_minute(activities)
         }
         
-        body_metrics = data_raw['body_metrics']
-        if(body_metrics == None):
-            body_metrics = {}
         height_weight = {
-            'Exami2_BMXWT': body_metrics.get('bodyWeight'),
-            'Exami2_BMXHT': body_metrics.get('bodyHeight'),
-            'Exami2_BMXBMI': body_metrics.get(
-                'bmi',
-                self.get_bmi(body_metrics.get('bodyWeight'), body_metrics.get('bodyHeight'))
-            ),
+            'Exami2_BMXWT': data_raw['body_weight'],
+            'Exami2_BMXHT': data_raw['body_height'],
+            'Exami2_BMXBMI': self.get_bmi(data_raw['body_weight'], data_raw['body_height'])
         }
 
         pressure = {
-            'Exami1_SysPulse': body_metrics.get('systolicPressure'),
-            'Exami1_DiaPulse': body_metrics.get('diastolicPressure')
+            'Exami1_SysPulse': data_raw.get('systolic_pressure'),
+            'Exami1_DiaPulse': data_raw.get('diastolic_pressure')
         }
 
         # Rearrage Data for Model Consumption
