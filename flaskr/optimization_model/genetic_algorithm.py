@@ -1,4 +1,4 @@
-import numpy as np, os, joblib, pandas as pd, tensorflow as tf, random, sklearn, json, time
+import numpy as np, os, joblib, pandas as pd, tensorflow as tf, random, sklearn, json, time, keras
 from datetime import date
 from tools.utils import get_rootdir
 
@@ -27,7 +27,7 @@ class GA:
         self.__population_size = population_size
         self.__generations = generations
         self.__mutation_probability = mutation_probability
-        self.__model = tf.keras.models.load_model(model_path)
+        self.__model = keras.models.load_model(model_path)
         self.__for_app = for_app
 
         # preprocess characteristic and lifestyle
@@ -166,7 +166,7 @@ class GA:
     def __translate_lifestyle(self, lifestyle:np.ndarray, ls_risk:float):
         lifestyle_dict = {}
         lifestyle_dict['lifestyle'] = {}
-        ls_description_path = f'flaskr/optimization_model/metadata/{"app/" if self.__for_app else ""}v{self.__version}/v{self.__version}_lifestyle_description.json'
+        ls_description_path = f'/app/flaskr/optimization_model/metadata/{"app/" if self.__for_app else ""}v{self.__version}/v{self.__version}_lifestyle_description.json'
         with open(ls_description_path, 'r') as json_file:
             lifestyle_description = json.load(json_file)
 
