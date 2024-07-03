@@ -15,7 +15,7 @@ RUN apt-get update && apt-get install -y libhdf5-dev
 
 RUN pip3 install -r requirements.txt
 
-EXPOSE 8000:8000
+EXPOSE 80
 
 # CMD ["flask", "--app", "flaskr/webserver.py", "run"]
-CMD ["gunicorn", "-b", ":80", "--chdir", "/app/flaskr", "webserver:app"]
+CMD ["gunicorn", "-b", "0.0.0.0:80", "--timeout", "300", "--chdir", "/app/flaskr", "webserver:app"]
