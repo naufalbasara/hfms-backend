@@ -9,6 +9,8 @@ from ext.firebase_connection import FireBase
 from ext.preprocess import PreProcess
 
 warnings.filterwarnings("ignore")
+tf.config.threading.set_inter_op_parallelism_threads(1)
+tf.config.threading.set_intra_op_parallelism_threads(1)
 
 app = Flask(__name__)
 app.config['CORS_HEADERS'] = 'application/json'
