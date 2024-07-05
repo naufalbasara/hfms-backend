@@ -26,8 +26,9 @@ class FoodCentral:
         response = requests.get(self.__search_endpoint, params=params)
         
         obj_data_list = []
-
-        for i, food in enumerate(response.json()['food']):
+        
+        num_hits = 0
+        for i, food in enumerate(response.json()['foods']):
             num_hits = 0
             obj_data = {'rank': i}
             try:
@@ -50,7 +51,8 @@ class FoodCentral:
                     }
                 num_hits += 1
                 obj_data_list.append(obj_data)
-            except:
+            except Exception as e:
+                print('fdc request error:', e)
                 pass
-
+        
         return obj_data_list, num_hits

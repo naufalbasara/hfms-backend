@@ -1,13 +1,13 @@
-from ext.food_data_central import FoodCentral
+from food_data_central import FoodCentral
 
 import json, re, random, math
 from datetime import datetime, date
 from googletrans import Translator
 
 class PreProcess:
-    def __init__(self):
+    def __init__(self, fdc_api='uHxCRFHwKEClBTQ06pMHGfks3I7wr0seMxCSO76Q'):
         self.translator = Translator()
-        self.food_central = FoodCentral()
+        self.food_central = FoodCentral(api_key=fdc_api)
 
         random.seed(37)
 
@@ -17,7 +17,8 @@ class PreProcess:
         try:
             translated = self.translator.translate(name, src=src, dest=dest)
             return translated.text
-        except:
+        except Exception as e:
+            print("googletrans error:", e)
             return name
 
     def get_age(self, birth_date_str):
@@ -96,8 +97,8 @@ class PreProcess:
         try:
             nutrients, num_hits = self.food_central.get_nutrients(food_name, data_type=['Foundation'])
             if(num_hits > 0):
-                return nutrient[0]
-        except:
+                return nutrients[0]
+        except Exception as e:
             pass
         
         # Second Iteration: Check Food Name from Branded type, sample 30 hit
@@ -105,7 +106,7 @@ class PreProcess:
             nutrients, num_hits = self.food_central.get_nutrients(food_name, data_type=['Branded'])
             if(num_hits > 0):
                 nutrient = nutrients[0]
-                for i, val in enumerate(random.sample(nutrients, num_samples=min(num_samples, num_hits))):
+                for i, val in enumerate(random.sample(nutrients, min(num_samples, num_hits))):
                     if(i == 0):
                         continue
                     
@@ -114,7 +115,7 @@ class PreProcess:
                         nutrient['foodNutrients'][key] = nutrient['foodNutrients'].get(key, 0) + val['foodNutrients'].get(key, 0)
                     
                 return nutrient
-        except:
+        except Exception as e:
             pass
 
         # Second B Iteration: Check Food Name from Survey Food type, sample 30 hit
@@ -122,7 +123,7 @@ class PreProcess:
             nutrients, num_hits = self.food_central.get_nutrients(food_name, data_type=['Survey (FNDDS)'])
             if(num_hits > 0):
                 nutrient = nutrients[0]
-                for i, val in enumerate(random.sample(nutrients, num_samples=min(num_samples, num_hits))):
+                for i, val in enumerate(random.sample(nutrients, min(num_samples, num_hits))):
                     if(i == 0):
                         continue
                     
@@ -131,7 +132,7 @@ class PreProcess:
                         nutrient['foodNutrients'][key] = nutrient['foodNutrients'].get(key, 0) + val['foodNutrients'].get(key, 0)
                     
                 return nutrient
-        except:
+        except Exception as e:
             pass
         
         # Third Iteration: Check Food Name from Foundation type, by individual words (get the fewest non zero hit)
@@ -150,7 +151,7 @@ class PreProcess:
             
             if(nutrients != None):
                 return nutrients[0]
-        except:
+        except Exception as e:
             pass
 
         # Fourth Iteration: Check Food Name from Branded type, by individual words (get the fewest non zero hit)
@@ -169,7 +170,7 @@ class PreProcess:
             
             if(nutrients != None):
                 nutrient = nutrients[0]
-                for i, val in enumerate(random.sample(nutrients, num_samples=min(num_samples, num_hits))):
+                for i, val in enumerate(random.sample(nutrients, min(num_samples, num_hits))):
                     if(i == 0):
                         continue
                     
@@ -178,7 +179,7 @@ class PreProcess:
                         nutrient['foodNutrients'][key] = nutrient['foodNutrients'].get(key, 0) + val['foodNutrients'].get(key, 0)
                     
                 return nutrient
-        except:
+        except Exception as e:
             pass
         
         return {'status': 400, 'totalHits': 0}
