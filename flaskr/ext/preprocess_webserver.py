@@ -65,6 +65,8 @@ class PreProcess:
             if nutrient_name_simple in ['energy']:
                 if(nutrient['unitName'] == "KCAL"):
                     multiplier = 1
+                elif(nutrient['unitName'] == "kJ"):
+                    multiplier = 0.239006
                 else:
                     multiplier = 0
             if nutrient_name_simple in ['protein', 'carbohydrate', 'sugars', 'fiber', 'fat', 'saturated_fatty_acid', 'monounsaturated_fatty_acid', 'polyunsaturated_fatty_acid']:
@@ -246,7 +248,12 @@ class PreProcess:
                     detail['polyunsaturated_fatty_acid'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Fatty acids, total polyunsaturated', 'polyunsaturated_fatty_acid') * portion_multiplier
                     detail['cholesterol'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Cholesterol', 'cholesterol') * portion_multiplier
                     detail['calcium'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Calcium, Ca', 'calcium') * portion_multiplier
-                
+
+                    if detail['energy'] == 0:
+                        energy_other = self.get_nutrient_value(nutrient['foodNutrients'], 'Energy (Atwater General Factors)', 'energy') * portion_multiplier
+                        if(energy_other != 0):
+                            detail['energy'] = energy_other
+                    
                 # Update total nutrients
                 for key in total_detail:
                     if key in detail:
