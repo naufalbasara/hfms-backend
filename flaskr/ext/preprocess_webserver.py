@@ -5,9 +5,9 @@ from datetime import datetime, date
 from googletrans import Translator
 
 class PreProcess:
-    def __init__(self):
+    def __init__(self, fdc_api='uHxCRFHwKEClBTQ06pMHGfks3I7wr0seMxCSO76Q'):
         self.translator = Translator()
-        self.food_central = FoodCentral()
+        self.food_central = FoodCentral(api_key=fdc_api)
 
         random.seed(37)
 
@@ -96,7 +96,7 @@ class PreProcess:
         try:
             nutrients, num_hits = self.food_central.get_nutrients(food_name, data_type=['Foundation'])
             if(num_hits > 0):
-                return nutrient[0]
+                return nutrients[0]
         except:
             pass
         
@@ -105,7 +105,7 @@ class PreProcess:
             nutrients, num_hits = self.food_central.get_nutrients(food_name, data_type=['Branded'])
             if(num_hits > 0):
                 nutrient = nutrients[0]
-                for i, val in enumerate(random.sample(nutrients, num_samples=min(num_samples, num_hits))):
+                for i, val in enumerate(random.sample(nutrients, min(num_samples, num_hits))):
                     if(i == 0):
                         continue
                     
@@ -122,7 +122,7 @@ class PreProcess:
             nutrients, num_hits = self.food_central.get_nutrients(food_name, data_type=['Survey (FNDDS)'])
             if(num_hits > 0):
                 nutrient = nutrients[0]
-                for i, val in enumerate(random.sample(nutrients, num_samples=min(num_samples, num_hits))):
+                for i, val in enumerate(random.sample(nutrients, min(num_samples, num_hits))):
                     if(i == 0):
                         continue
                     
@@ -169,7 +169,7 @@ class PreProcess:
             
             if(nutrients != None):
                 nutrient = nutrients[0]
-                for i, val in enumerate(random.sample(nutrients, num_samples=min(num_samples, num_hits))):
+                for i, val in enumerate(random.sample(nutrients, min(num_samples, num_hits))):
                     if(i == 0):
                         continue
                     
