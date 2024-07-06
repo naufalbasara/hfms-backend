@@ -102,6 +102,9 @@ def predict(version):
         lifestyle = {}
         request_data = request.get_json()
 
+        preprocess = PreProcess()
+        request_data = preprocess.preprocess(request_data)
+
         # map the data from POST request json data to relevant variables
         try:
             for ls_col in lifestyle_col.keys():
