@@ -1,4 +1,4 @@
-FROM python:3.11
+FROM python:3.11-slim
 
 ARG PIP_DISABLE_PIP_VERSION_CHECK=1
 ARG PIP_NO_CACHE_DIR=1
@@ -7,15 +7,15 @@ WORKDIR /app
 
 COPY . /app
 
+RUN apt-get update && apt-get install -y build-essential libssl-dev libffi-dev
+RUN apt-get update && apt-get install -y libhdf5-dev hdf5-tools pkg-config
+
 RUN pip install --upgrade pip setuptools wheel
 
-RUN apt-get update && apt-get install -y libhdf5-dev
+RUN pip install --no-binary=h5py h5py
 
-# RUN pip3 install --no-binary h5py h5py
+RUN pip install --no-cache-dir -r requirements.txt
 
-RUN pip3 install -r requirements.txt
+EXPOSE 8080
 
-EXPOSE 80
-
-# CMD ["flask", "--app", "flaskr/webserver.py", "run"]
-CMD ["gunicorn", "-b", "0.0.0.0:80", "--timeout", "300", "--chdir", "/app/flaskr", "webserver:app"]
+CMD ["gunicorn", "-b", ":8080", "--workers", "1", "--chdir", "/app/flaskr", "webserver:app"]

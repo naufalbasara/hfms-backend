@@ -1,1 +1,11 @@
-runtime: python311
+runtime: python
+env: flex
+
+instance_class: F4_HIGHMEM
+
+runtime_config:
+    operating_system: "ubuntu22"
+    runtime_version: "3.11"
+resources:
+  cpu: 1
+  memory_gb: 1
