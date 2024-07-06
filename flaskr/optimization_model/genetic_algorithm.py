@@ -166,7 +166,7 @@ class GA:
     def __translate_lifestyle(self, lifestyle:np.ndarray, ls_risk:float):
         lifestyle_dict = {}
         lifestyle_dict['lifestyle'] = {}
-        ls_description_path = f'/app/flaskr/optimization_model/metadata/{"app/" if self.__for_app else ""}v{self.__version}/v{self.__version}_lifestyle_description.json'
+        ls_description_path = f'optimization_model/metadata/{"app/" if self.__for_app else ""}v{self.__version}/v{self.__version}_lifestyle_description.json'
         with open(ls_description_path, 'r') as json_file:
             lifestyle_description = json.load(json_file)
 
@@ -193,8 +193,8 @@ class GA:
                 'comparison': existingComparison,
                 'changeStatus': f'{changed}'
                 }
-        lifestyle_dict['currentRisk'] = self.__current_risk
-        lifestyle_dict['riskAfterRecommendation'] = ls_risk
+        lifestyle_dict['currentRisk'] = round(min((self.__current_risk*0.5)/0.01220415998250246, 100), 5)
+        lifestyle_dict['riskAfterRecommendation'] = round(min((ls_risk*0.5)/0.01220415998250246, 100), 5)
         lifestyle_dict['riskReduction'] = self.__current_risk - ls_risk
         lifestyle_dict['timeGenerated'] = str(date.today())
         lifestyle_dict['timeTaken'] = f'{round(time.time() - self.__start_time, 3)}s'

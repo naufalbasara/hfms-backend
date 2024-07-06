@@ -1,7 +1,6 @@
 from tools.gsheet_conn import GSheet
 import os, pandas as pd, json
 from dotenv import load_dotenv
-from pprint import pprint
 
 load_dotenv()
 

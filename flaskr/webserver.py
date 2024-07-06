@@ -1,12 +1,12 @@
-import joblib, os, tensorflow as tf, sklearn, numpy as np, pandas as pd, json, warnings, re, time
+import numpy as np, json, warnings, time
 import optimization_model.genetic_algorithm as optimization
 
 from flask import Flask, request
 from flask_cors import CORS, cross_origin
 from datetime import date
-from tools.utils import get_rootdir, get_certificate, preprocess_pipeline, load_model
+from tools.utils import preprocess_pipeline, load_model
 from ext.firebase_connection import FireBase
-from ext.preprocess import PreProcess
+from ext.preprocess_webserver import PreProcess
 
 warnings.filterwarnings("ignore")
 
@@ -24,33 +24,33 @@ def get_metadata_version(version, call_type:str) -> dict:
         'fp': {
             'v1': {
                 'description': 'For thesis final project purposes',
-                'scaler_path': f'/app/flaskr/scaler_model/{version_text}_standard_scaler.gz',
-                'columns_order_path': f'/app/flaskr/optimization_model/metadata/{version_text}/{version_text}_columns_order.json',
-                'genes_path': f'/app/flaskr/optimization_model/metadata/{version_text}/{version_text}_variable_discrete_value.json',
-                'model_path': '/app/flaskr/prediction_model/model_cnn_v2-3.h5'
+                'scaler_path': f'scaler_model/{version_text}_standard_scaler.gz',
+                'columns_order_path': f'optimization_model/metadata/{version_text}/{version_text}_columns_order.json',
+                'genes_path': f'optimization_model/metadata/{version_text}/{version_text}_variable_discrete_value.json',
+                'model_path': 'prediction_model/model_cnn_v2-3.h5'
             },
             'v2': {
                 'description': 'For thesis final project (app) testing purposes',
-                'scaler_path': f'/app/flaskr/scaler_model/{version_text}_standard_scaler.gz',
-                'columns_order_path': f'/app/flaskr/optimization_model/metadata/{version_text}/{version_text}_columns_order.json',
-                'genes_path': f'/app/flaskr/optimization_model/metadata/{version_text}/{version_text}_variable_discrete_value.json',
-                'model_path': '/app/flaskr/prediction_model/model_cnn_app.h5'
+                'scaler_path': f'scaler_model/{version_text}_standard_scaler.gz',
+                'columns_order_path': f'optimization_model/metadata/{version_text}/{version_text}_columns_order.json',
+                'genes_path': f'optimization_model/metadata/{version_text}/{version_text}_variable_discrete_value.json',
+                'model_path': 'prediction_model/model_cnn_app.h5'
             },
             'v3': {
                 'description': 'For thesis final project purposes',
-                'scaler_path': f'/app/flaskr/scaler_model/{version_text}_standard_scaler.gz',
-                'columns_order_path': f'/app/flaskr/optimization_model/metadata/{version_text}/{version_text}_columns_order.json',
-                'genes_path': f'/app/flaskr/optimization_model/metadata/{version_text}/{version_text}_variable_discrete_value.json',
-                'model_path': '/app/flaskr/prediction_model/model_lstm_v3.h5'
+                'scaler_path': f'scaler_model/{version_text}_standard_scaler.gz',
+                'columns_order_path': f'optimization_model/metadata/{version_text}/{version_text}_columns_order.json',
+                'genes_path': f'optimization_model/metadata/{version_text}/{version_text}_variable_discrete_value.json',
+                'model_path': 'prediction_model/model_lstm_v3.h5'
             }
         },
         'app': {
             'v1': {
                 'description': 'For application purposes, only receive user_id in a JSON payload',
-                'scaler_path': f'/app/flaskr/scaler_model/app/{version_text}_standard_scaler.gz',
-                'columns_order_path': f'/app/flaskr/optimization_model/metadata/app/{version_text}/{version_text}_columns_order.json',
-                'genes_path': f'/app/flaskr/optimization_model/metadata/app/{version_text}/{version_text}_variable_discrete_value.json',
-                'model_path': '/app/flaskr/prediction_model/model_cnn_app_v2.h5'
+                'scaler_path': f'scaler_model/app/{version_text}_standard_scaler.gz',
+                'columns_order_path': f'optimization_model/metadata/app/{version_text}/{version_text}_columns_order.json',
+                'genes_path': f'optimization_model/metadata/app/{version_text}/{version_text}_variable_discrete_value.json',
+                'model_path': 'prediction_model/model_cnn_proper_apps_v3.h5'
             }
         }
     }
@@ -291,14 +291,16 @@ def app_recommendation(version):
         characteristic = {}
         lifestyle = {}
         request_data = request.get_json()
+        pipeline = PreProcess()
+        cleaned_data = pipeline.preprocess(request_data)
 
         try:
             for ls_col in lifestyle_col.keys():
-                lifestyle[ls_col] = float(request_data[ls_col])
+                lifestyle[ls_col] = float(cleaned_data[ls_col])
 
             for char_col in characteristic_col.keys():
                 if char_col == 'Quest16_MCQ160B': continue
-                characteristic[char_col] = float(request_data[char_col])
+                characteristic[char_col] = float(cleaned_data[char_col])
 
             # get all the data to numpy
             characteristic = np.expand_dims(np.array([*characteristic.values()]), axis=0)
@@ -452,4 +454,4 @@ def app_recommendation(version):
 # ===================== End of Application Endpoints =====================
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080)
+    app.run(debug=True)
