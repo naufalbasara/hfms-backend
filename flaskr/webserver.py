@@ -1,4 +1,4 @@
-import numpy as np, json, warnings, time
+import numpy as np, json, warnings, time, os, load_dotenv
 import optimization_model.genetic_algorithm as optimization
 
 from flask import Flask, request
@@ -13,7 +13,10 @@ warnings.filterwarnings("ignore")
 app = Flask(__name__)
 app.config['CORS_HEADERS'] = 'application/json'
 CORS(app,resources={r"*": {"origins": "*"}})
+load_dotenv()
 
+# Access the PORT variable
+port = os.getenv('PORT')
 # root_dir = get_rootdir()
 # firebase_dir = get_certificate()
 
@@ -454,4 +457,5 @@ def app_recommendation(version):
 # ===================== End of Application Endpoints =====================
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=8080, debug=True)
+    app.run(host='0.0.0.0', port=port, debug=True)
+    print(f"App is running in port {port}")
