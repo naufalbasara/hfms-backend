@@ -66,6 +66,8 @@ class PreProcess:
             if nutrient_name_simple in ['energy']:
                 if(nutrient['unitName'] == "KCAL"):
                     multiplier = 1
+                elif(nutrient['unitName'] == "kJ"):
+                    multiplier = 0.239006
                 else:
                     multiplier = 0
             if nutrient_name_simple in ['protein', 'carbohydrate', 'sugars', 'fiber', 'fat', 'saturated_fatty_acid', 'monounsaturated_fatty_acid', 'polyunsaturated_fatty_acid']:
@@ -139,12 +141,13 @@ class PreProcess:
         try:
             fewest_hit = 1e8
             nutrients = None
-            for i, word in food_name.split(' '):
+            for i, word in enumerate(food_name.split(' ')):
                 # Limit to the first 3 words to search individually
                 if(i >= 3):
                     break
                 nutrients_temp, num_hits = self.food_central.get_nutrients(word, data_type=['Foundation'])
-
+                if (num_hits > 2e4):
+                    break
                 if(num_hits < fewest_hit and num_hits != 0):
                     nutrients = nutrients_temp
                     fewest_hit = num_hits
@@ -158,12 +161,13 @@ class PreProcess:
         try:
             fewest_hit = 1e8
             nutrients = None
-            for i, word in food_name.split(' '):
+            for i, word in enumerate(food_name.split(' ')):
                 # Limit to the first 3 words to search individually
                 if(i >= 3):
                     break
                 nutrients_temp, num_hits = self.food_central.get_nutrients(word, data_type=['Branded'])
-
+                if (num_hits > 2e4):
+                    break
                 if(num_hits < fewest_hit and num_hits != 0):
                     nutrients = nutrients_temp
                     fewest_hit = num_hits
@@ -247,7 +251,12 @@ class PreProcess:
                     detail['polyunsaturated_fatty_acid'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Fatty acids, total polyunsaturated', 'polyunsaturated_fatty_acid') * portion_multiplier
                     detail['cholesterol'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Cholesterol', 'cholesterol') * portion_multiplier
                     detail['calcium'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Calcium, Ca', 'calcium') * portion_multiplier
-                
+
+                    if detail['energy'] == 0:
+                        energy_other = self.get_nutrient_value(nutrient['foodNutrients'], 'Energy (Atwater General Factors)', 'energy') * portion_multiplier
+                        if(energy_other != 0):
+                            detail['energy'] = energy_other
+
                 # Update total nutrients
                 for key in total_detail:
                     if key in detail:
@@ -274,7 +283,7 @@ class PreProcess:
     def get_bmi(self, weight, height):
         if(weight == None or height == None):
             return None
-        return weight/((height/100)**2)
+        return float(weight)/((float(height)/100)**2)
     
     def is_having_pain(self, symptoms_list):
         if(len(symptoms_list) == 0):
@@ -283,7 +292,7 @@ class PreProcess:
         for symptoms in symptoms_list:
             try:
                 for symptom in symptoms:
-                    if symptom.get('name') == 'Pain in Chest Area':
+                    if symptom.get('name') == 'Nyeri Dada':
                         return 1
             except:
                 pass
@@ -305,9 +314,9 @@ class PreProcess:
         }
 
         sleep = {
-            'Quest21_SLQ300': self.timestamp_to_int(data_raw['sleep_time']),
-            'Quest21_SLQ330': self.timestamp_to_int(data_raw['wake_time']),
-            'Quest21_SLD012': self.get_sleep_duration(data_raw['sleep_time'], data_raw['wake_time'])
+            'Quest21_SLQ3032': self.timestamp_to_int(data_raw['sleep_time']),
+            # 'Quest21_SLQ330': self.timestamp_to_int(data_raw['wake_time']),
+            'Quest21_SLD123': self.get_sleep_duration(data_raw['sleep_time'], data_raw['wake_time'])
         }
 
         symptoms = data_raw['symptoms']
@@ -329,8 +338,6 @@ class PreProcess:
             'Dieta1_DR1TSUGR': dietary_detail['sugars'],
             'Dieta1_DR1TFIBE': dietary_detail['fiber'],
             'Dieta1_DR1TTFAT': dietary_detail['fat'],
-            'Dieta1_DR1TTFAT': dietary_detail['fat'],
-            'Dieta1_DR1TSFAT': dietary_detail['saturated_fatty_acid'],
             'Dieta1_DR1TSFAT': dietary_detail['saturated_fatty_acid'],
             'Dieta1_DR1TMFAT': dietary_detail['monounsaturated_fatty_acid'],
             'Dieta1_DR1TPFAT': dietary_detail['polyunsaturated_fatty_acid'],
@@ -346,14 +353,14 @@ class PreProcess:
         }
         
         height_weight = {
-            'Exami2_BMXWT': data_raw['body_weight'],
-            'Exami2_BMXHT': data_raw['body_height'],
+            'Exami2_BMXWT': float(data_raw['body_weight']),
+            'Exami2_BMXHT': float(data_raw['body_height']),
             'Exami2_BMXBMI': self.get_bmi(data_raw['body_weight'], data_raw['body_height'])
         }
 
         pressure = {
-            'Exami1_SysPulse': data_raw.get('systolic_pressure'),
-            'Exami1_DiaPulse': data_raw.get('diastolic_pressure')
+            'Exami1_SysPulse': float(data_raw.get('systolic_pressure')),
+            'Exami1_DiaPulse': float(data_raw.get('diastolic_pressure'))
         }
 
         # Rearrage Data for Model Consumption
@@ -370,7 +377,5 @@ class PreProcess:
         data.update(height_weight)
         data.update(pain)
         data.update(pressure)
-
-        ret = json.dumps(data)
 
         return data
