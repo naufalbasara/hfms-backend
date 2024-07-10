@@ -1,4 +1,4 @@
-from food_data_central import FoodCentral
+from ext.food_data_central import FoodCentral
 
 import json, re, random, math
 from datetime import datetime, date
