@@ -1,4 +1,4 @@
-from food_data_central import FoodCentral
+from ext.food_data_central import FoodCentral
 
 import json, re, random, math
 from datetime import datetime, date
@@ -141,12 +141,11 @@ class PreProcess:
         try:
             fewest_hit = 1e8
             nutrients = None
-            for i, word in food_name.split(' '):
+            for i, word in enumerate(food_name.split(' ')):
                 # Limit to the first 3 words to search individually
                 if(i >= 3):
                     break
                 nutrients_temp, num_hits = self.food_central.get_nutrients(word, data_type=['Foundation'])
-
                 if(num_hits < fewest_hit and num_hits != 0):
                     nutrients = nutrients_temp
                     fewest_hit = num_hits
@@ -160,7 +159,7 @@ class PreProcess:
         try:
             fewest_hit = 1e8
             nutrients = None
-            for i, word in food_name.split(' '):
+            for i, word in enumerate(food_name.split(' ')):
                 # Limit to the first 3 words to search individually
                 if(i >= 3):
                     break
@@ -229,6 +228,8 @@ class PreProcess:
 
                 # Get Nutrient Detail From USDA Food Data Central
                 nutrient = self.get_nutrient_summary(food_name)
+                print(consumption)
+                print(nutrient)
                 
                 # Nutrient from FDA is for every 100 gr/ml food
                 try:
@@ -290,7 +291,7 @@ class PreProcess:
         for symptoms in symptoms_list:
             try:
                 for symptom in symptoms:
-                    if symptom.get('name') == 'Pain in Chest Area':
+                    if symptom.get('name') == 'Nyeri Dada':
                         return 1
             except:
                 pass
