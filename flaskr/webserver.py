@@ -1,4 +1,4 @@
-import numpy as np, json, warnings, time, os, load_dotenv
+import numpy as np, json, warnings, time, os
 import optimization_model.genetic_algorithm as optimization
 
 from flask import Flask, request
@@ -7,18 +7,13 @@ from datetime import date
 from tools.utils import preprocess_pipeline, load_model
 from ext.firebase_connection import FireBase
 from ext.preprocess_webserver import PreProcess
+from ext.preprocess import PreProcess as AppPreprocess
 
 warnings.filterwarnings("ignore")
 
 app = Flask(__name__)
 app.config['CORS_HEADERS'] = 'application/json'
 CORS(app,resources={r"*": {"origins": "*"}})
-load_dotenv()
-
-# Access the PORT variable
-port = os.getenv('PORT')
-# root_dir = get_rootdir()
-# firebase_dir = get_certificate()
 
 def get_metadata_version(version, call_type:str) -> dict:
     version_text = f'v{version}'
@@ -53,7 +48,7 @@ def get_metadata_version(version, call_type:str) -> dict:
                 'scaler_path': f'scaler_model/app/{version_text}_standard_scaler.gz',
                 'columns_order_path': f'optimization_model/metadata/app/{version_text}/{version_text}_columns_order.json',
                 'genes_path': f'optimization_model/metadata/app/{version_text}/{version_text}_variable_discrete_value.json',
-                'model_path': 'prediction_model/model_cnn_proper_apps_v3.h5'
+                'model_path': 'prediction_model/random_forest_app.joblib'
             }
         }
     }
@@ -130,12 +125,12 @@ def predict(version):
         # preprocess data through data pipeline
         try:
             whole_data = preprocess_pipeline(metadata['scaler_path'], characteristic, lifestyle, version=version)
-            result = model.predict(whole_data, verbose=0)
+            result = model.predict_proba(whole_data, verbose=0)
             result_json['result'] = {
                 'label': f"{np.argmax(result)}",
                 'text': f"{'Not having heart failure.' if np.argmax(result)== 0 else 'Likely to have heart failure.'}"
             }
-            result_json['probability'] = f"{result[0, 1]}"
+            result_json['probability'] = f"{result[0,1]*100}"
             result_json['status'] = 200
             result_json['timeGenerated'] = str(date.today())
             result_json['timeTaken'] = f'{time.time() - time_start} s'
@@ -275,6 +270,7 @@ def app_recommendation(version):
     result_json = {}
     time_start = time.time()
 
+    # try getting metadata for corresponding version
     try:
         with open(metadata['columns_order_path'], 'r') as json_file:
             json_f = str(json_file.read()).strip("'<>() ").replace('\'', '\"')
@@ -294,8 +290,32 @@ def app_recommendation(version):
         characteristic = {}
         lifestyle = {}
         request_data = request.get_json()
-        pipeline = PreProcess()
-        cleaned_data = pipeline.preprocess(request_data)
+        user_id = request_data.get('user_id', None)
+        if user_id == None:
+            pipeline = AppPreprocess()
+            cleaned_data = pipeline.preprocess(request_data)
+        else:
+            firebase = FireBase('PulseWise_secret.json')
+            preprocess = AppPreprocess()
+            user_data = firebase.get_data(user_id)
+            if user_data.get('sleep_time', None) == None:
+                return {
+                    'result': f'No data input from user {user_id}',
+                    'status': 400,
+                    'timeGenerated': str(date.today()),
+                    'timeTaken': f'{time.time() - time_start} s'
+                }, 400
+            print('firebase user_id res ===> ', user_data)
+            cleaned_data = preprocess.preprocess(user_data)
+            print('preprocess res ===> ', cleaned_data)
+
+            if cleaned_data.get('Dieta1_DR1TKCAL', None) == None:
+                return {
+                    'result': 'No diet input',
+                    'status': 400,
+                    'timeGenerated': str(date.today()),
+                    'timeTaken': f'{time.time() - time_start} s'
+                }, 400
 
         try:
             for ls_col in lifestyle_col.keys():
@@ -370,92 +390,89 @@ def app_recommendation(version):
         
         return result_json, 200
 
-# @app.route('/v<int:version>/app/predictions/', methods=['POST'])
-# @cross_origin(origins='*')
-# def app_predict(version):
-    # metadata = get_metadata_version(version, call_type='app')
-    # response_json = {}
-    # model = load_model(metadata['model_path'])
-    # time_start = time.time()
+@app.route('/v<int:version>/app/predictions/', methods=['POST'])
+@cross_origin(origins='*')
+def app_predict(version):
+    metadata = get_metadata_version(version, call_type='app')
+    response_json = {}
+    model = load_model(metadata['model_path'])
+    time_start = time.time()
 
-    # if request.method == 'POST':
-    #     try:
-    #         with open(metadata['columns_order_path'], 'r') as json_file:
-    #             json_f = str(json_file.read()).strip("'<>() ").replace('\'', '\"')
-    #             lifestyle_col = json.loads(json_f)['lifestyle']
-    #             characteristic_col = json.loads(json_f)['characteristic']
-    #     except Exception as e:
-    #         response_json['result'] = 'Metadata file not found.'
-    #         response_json['errorDetails'] = f'{e}'
-    #         response_json['status'] = 400
-    #         response_json['timeGenerated'] = str(date.today())
-    #         response_json['timeTaken'] = f'{time.time() - time_start} s'
+    if request.method == 'POST':
+        try:
+            with open(metadata['columns_order_path'], 'r') as json_file:
+                json_f = str(json_file.read()).strip("'<>() ").replace('\'', '\"')
+                lifestyle_col = json.loads(json_f)['lifestyle']
+                characteristic_col = json.loads(json_f)['characteristic']
+        except Exception as e:
+            response_json['result'] = 'Metadata file not found.'
+            response_json['errorDetails'] = f'{e}'
+            response_json['status'] = 400
+            response_json['timeGenerated'] = str(date.today())
+            response_json['timeTaken'] = f'{time.time() - time_start} s'
 
-    #         return response_json, 400
+            return response_json, 400
 
-    #     # load data from form / http post request
-    #     characteristic = {}
-    #     lifestyle = {}
-    #     user_id = request.get_json()['user_id']
-    #     print(user_id)
+        # load data from form / http post request
+        characteristic = {}
+        lifestyle = {}
+        user_id = request.get_json()['user_id']
 
-    #     # instantiate necessary object
-    #     firebase = FireBase(firebase_dir)
-    #     preprocess = PreProcess()
-    #     cleaned_data = preprocess.preprocess(firebase.get_data(user_id))
-    #     print(cleaned_data)
+        # instantiate necessary object
+        firebase = FireBase('PulseWise_secret.json')
+        preprocess = AppPreprocess()
+        cleaned_data = preprocess.preprocess(firebase.get_data(user_id))
     
-    #     # map the data from POST request json data to relevant variables
-    #     try:
-    #         for ls_col in lifestyle_col.keys():
-    #             if cleaned_data[ls_col] == None: cleaned_data[ls_col] = 0
-    #             lifestyle[ls_col] = cleaned_data[ls_col]
+        # map the data from POST request json data to relevant variables
+        try:
+            for ls_col in lifestyle_col.keys():
+                if cleaned_data[ls_col] == None: cleaned_data[ls_col] = 0
+                lifestyle[ls_col] = cleaned_data[ls_col]
 
-    #         for char_col in characteristic_col.keys():
-    #             if char_col == 'Quest16_MCQ160B':
-    #                 continue
-    #             if cleaned_data[char_col] == None: cleaned_data[char_col] = 0
-    #             characteristic[char_col] = cleaned_data[char_col]
+            for char_col in characteristic_col.keys():
+                if char_col == 'Quest16_MCQ160B':
+                    continue
+                if cleaned_data[char_col] == None: cleaned_data[char_col] = 0
+                characteristic[char_col] = cleaned_data[char_col]
 
-    #         characteristic = np.expand_dims(np.array([*characteristic.values()]), axis=0)
-    #         lifestyle = np.expand_dims(np.array([*lifestyle.values()]), axis=0)
+            characteristic = np.expand_dims(np.array([*characteristic.values()]), axis=0)
+            lifestyle = np.expand_dims(np.array([*lifestyle.values()]), axis=0)
 
-    #     except Exception as e:
-    #         response_json['result'] = 'The data is incomplete, please provide the full data instead.'
-    #         response_json['errorDetails'] = f'{e}'
-    #         response_json['status'] = 400
-    #         response_json['timeGenerated'] = str(date.today())
-    #         response_json['timeTaken'] = f'{time.time() - time_start} s'
+        except Exception as e:
+            response_json['result'] = 'The data is incomplete, please provide the full data instead.'
+            response_json['errorDetails'] = f'{e}'
+            response_json['status'] = 400
+            response_json['timeGenerated'] = str(date.today())
+            response_json['timeTaken'] = f'{time.time() - time_start} s'
 
-    #         return response_json, 400
+            return response_json, 400
 
-    #     # preprocess data through data pipeline
-    #     try:
-    #         whole_data = preprocess_pipeline(metadata['scaler_path'], characteristic, lifestyle, version=version)
-    #         result = model.predict(whole_data, verbose=0)
+        # preprocess data through data pipeline
+        try:
+            whole_data = preprocess_pipeline(metadata['scaler_path'], characteristic, lifestyle, version=version)
+            result = model.predict(whole_data, verbose=0)
 
-    #         response_json['result'] = {
-    #             'label': f"{np.argmax(result)}",
-    #             'text': f"{'Not having heart failure.' if np.argmax(result)== 0 else 'Likely to have heart failure.'}"
-    #         }
-    #         response_json['probability'] = f"{result[0, 1]}"
-    #         response_json['status'] = 200
-    #         response_json['timeGenerated'] = str(date.today())
-    #         response_json['timeTaken'] = f'{time.time() - time_start} s'
+            response_json['result'] = {
+                'label': f"{np.argmax(result)}",
+                'text': f"{'Not having heart failure.' if np.argmax(result)== 0 else 'Likely to have heart failure.'}"
+            }
+            response_json['probability'] = f"{result[0, 1]}"
+            response_json['status'] = 200
+            response_json['timeGenerated'] = str(date.today())
+            response_json['timeTaken'] = f'{time.time() - time_start} s'
 
-    #         return response_json, 200
-    #     except Exception as e:
-    #         response_json['result'] = 'There is something wrong with the data'
-    #         response_json['error'] = f'{e}'
-    #         response_json['status'] = 400
-    #         response_json['timeGenerated'] = str(date.today())
-    #         response_json['timeTaken'] = f'{time.time() - time_start} s'
+            return response_json, 200
+        except Exception as e:
+            response_json['result'] = 'There is something wrong with the data'
+            response_json['error'] = f'{e}'
+            response_json['status'] = 400
+            response_json['timeGenerated'] = str(date.today())
+            response_json['timeTaken'] = f'{time.time() - time_start} s'
 
-    #         return response_json, 400
+            return response_json, 400
     
-    # return response_json
+    return response_json
 # ===================== End of Application Endpoints =====================
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=port, debug=True)
-    print(f"App is running in port {port}")
+    app.run(host='0.0.0.0', port=8080, debug=True)

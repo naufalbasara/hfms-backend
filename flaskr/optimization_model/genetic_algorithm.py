@@ -1,6 +1,5 @@
-import numpy as np, os, joblib, pandas as pd, tensorflow as tf, random, sklearn, json, time, keras
+import numpy as np, os, joblib, pandas as pd, random, sklearn, json, time
 from datetime import date
-from tools.utils import get_rootdir
 
 class GA:
     """
@@ -27,7 +26,7 @@ class GA:
         self.__population_size = population_size
         self.__generations = generations
         self.__mutation_probability = mutation_probability
-        self.__model = keras.models.load_model(model_path)
+        self.__model = joblib.load(model_path)
         self.__for_app = for_app
 
         # preprocess characteristic and lifestyle
@@ -37,8 +36,6 @@ class GA:
         self.__current_risk = self.__predict(self.__current_lifestyle_arr)
         self.__best_result = self.__current_risk
         self.__version = version
-
-        print(self.__current_risk)
 
     def __generate_individual(self):
         """
@@ -148,7 +145,7 @@ class GA:
 
     def __get_whole_data(self, lifestyle:np.ndarray):
         whole_data = np.concatenate((lifestyle, self.__characteristic), axis=1).astype(float)
-        whole_data = whole_data.reshape(whole_data.shape[0], whole_data.shape[1], 1)
+        # whole_data = whole_data.reshape(whole_data.shape[0], whole_data.shape[1], 1)
 
         return whole_data
 
@@ -188,14 +185,17 @@ class GA:
             lifestyle_dict['lifestyle'][ls_component] = {
                 'description': lifestyle_description[ls_component],
                 'currentValue': self.__genes[ls_component][str(current_ls_value)],
-                'recommendedValueInterval': self.__genes[ls_component][str(value)],
+                'recommendedValueInterval': self.__genes[ls_component][str(value)] if not (ls_component == "Quest22_SMQ890" or ls_component == "Quest22_SMQ890") else 0,
                 'codeValue': str(value),
                 'comparison': existingComparison,
                 'changeStatus': f'{changed}'
                 }
-        lifestyle_dict['currentRisk'] = round(min((self.__current_risk*0.5)/0.01220415998250246, 100), 5)
-        lifestyle_dict['riskAfterRecommendation'] = round(min((ls_risk*0.5)/0.01220415998250246, 100), 5)
+        lifestyle_dict['currentRisk'] = self.__current_risk
+        lifestyle_dict['currentRiskThresh'] = round(min((self.__current_risk*0.5)/0.20375, 100), 5)
+        lifestyle_dict['riskAfterRecommendation'] = ls_risk
+        lifestyle_dict['riskAfterRecommendationThresh'] = round(min((ls_risk*0.5)/0.20375, 100), 5)
         lifestyle_dict['riskReduction'] = self.__current_risk - ls_risk
+        lifestyle_dict['riskReductionThresh'] = lifestyle_dict['currentRiskThresh'] - lifestyle_dict['riskAfterRecommendationThresh']
         lifestyle_dict['timeGenerated'] = str(date.today())
         lifestyle_dict['timeTaken'] = f'{round(time.time() - self.__start_time, 3)}s'
 
@@ -203,7 +203,7 @@ class GA:
 
     def __predict(self, lifestyle:np.ndarray):
         data = self.__get_whole_data(lifestyle)
-        result = round(self.__model.predict(data, verbose=0)[0, 1]*100, 15)
+        result = round(self.__model.predict_proba(data)[0, 1]*100, 15)
 
         return result
 

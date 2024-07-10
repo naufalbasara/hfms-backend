@@ -1,4 +1,4 @@
-import joblib, tensorflow as tf, sklearn, numpy as np, pandas as pd, json, os, re,keras
+import joblib, sklearn, numpy as np, pandas as pd, json, os, re
 
 def get_rootdir() -> str:
     cwd = os.path.abspath(os.getcwd())
@@ -19,7 +19,8 @@ def get_certificate() -> str:
 
 def load_model(model_path:str):
     """path to saved model with h5 format"""
-    model = keras.models.load_model(model_path)
+    model = joblib.load(model_path)
+    # model = keras.models.load_model(model_path)
 
     return model
 

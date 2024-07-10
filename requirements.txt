@@ -1,12 +1,10 @@
-tensorflow==2.15.0
-keras
 Flask
 Flask-Cors
 joblib
 firebase-admin
-scikit-learn
+scikit-learn==1.2.2
+numpy==1.26.4
 pandas
-numpy
 gunicorn
 Babel
 googletrans==3.1.0a0

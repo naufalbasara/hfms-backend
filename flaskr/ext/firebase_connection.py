@@ -1,6 +1,7 @@
 import re
 import locale
 from datetime import datetime, date, time, timedelta
+import firebase_admin
 from firebase_admin import credentials, firestore, initialize_app
 from babel.dates import format_date, parse_date
 import json
@@ -8,8 +9,9 @@ import json
 class FireBase:
     def __init__(self, certificate_path:str=''):
         # Initialize Firebase
-        self.cred = credentials.Certificate(certificate_path)
-        initialize_app(self.cred)
+        if not firebase_admin._apps:
+            self.cred = credentials.Certificate(certificate_path) 
+            initialize_app(self.cred)
 
         # Get a reference to the Firestore database
         self.db = firestore.client()
@@ -93,7 +95,7 @@ class FireBase:
             'consumptions_list' : consumptions_list
         }
 
-    def get_data(self, user_id, data_window=30):
+    def get_data(self, user_id, data_window=60):
         data = {'user_id': user_id}
         
         # Data From Diary
@@ -158,7 +160,7 @@ class FireBase:
         data['sleep_time'] = user_data.get('sleepTime', None)
         data['wake_time'] = user_data.get('wakeTime', None)
 
-        data_json = json.dumps(data)
+        data
 
-        return data_json
+        return data
     
