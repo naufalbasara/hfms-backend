@@ -1,4 +1,4 @@
-from ext.food_data_central import FoodCentral
+from food_data_central import FoodCentral
 
 import json, re, random, math
 from datetime import datetime, date
@@ -188,9 +188,9 @@ class PreProcess:
         
         return {'status': 400, 'totalHits': 0}
 
-    def get_consumption_detail(self, consumptions):
+    def get_consumption_detail(self, consumptions_list):
         
-        if(len(consumptions) == 0):
+        if(len(consumptions_list) == 0):
             total_detail = {
                 'energy': None,
                 'protein': None,
@@ -219,85 +219,112 @@ class PreProcess:
             'cholesterol': 0,
             'calcium': 0
         }
+        num_food = 0
+        for consumptions in consumptions_list:
+            try:
+                for consumption in consumptions:
+                    # Translate Food name from id to en
+                    food_name = self.translate(consumption['name'])
+                    food_name = re.sub(r'[,\.;&/\\]', ' ', food_name)
 
-        try:
-            for consumption in consumptions:
-                # Translate Food name from id to en
-                food_name = self.translate(consumption['name'])
+                    # Get Nutrient Detail From USDA Food Data Central
+                    nutrient = self.get_nutrient_summary(food_name)
+                    print(food_name, nutrient)
 
-                # Hardcode to exclude water / mineral water
-                if(food_name.lower() in ['water', 'mineral water']):
-                    continue
+                    # Nutrient from FDA is for every 100 gr/ml food
+                    try:
+                        portion_multiplier = 100/self.get_portion(consumption['portion'])
+                    except:
+                        portion_multiplier = 1
 
-                # Get Nutrient Detail From USDA Food Data Central
-                nutrient = self.get_nutrient_summary(food_name)
-                
-                # Nutrient from FDA is for every 100 gr/ml food
-                try:
-                    portion_multiplier = 100/self.get_portion(consumption['portion'])
-                except:
-                    portion_multiplier = 1
+                    detail = {}
+                    if(nutrient['status'] == 200):
+                        detail['energy'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Energy', 'energy') * portion_multiplier
+                        detail['protein'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Protein', 'protein') * portion_multiplier
+                        detail['carbohydrate'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Carbohydrate, by difference', 'carbohydrate') * portion_multiplier
+                        detail['sugars'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Sugars, Total', 'sugars') * portion_multiplier
+                        detail['fiber'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Fiber, total dietary', 'fiber') * portion_multiplier
+                        detail['fat'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Total lipid (fat)', 'fat') * portion_multiplier
+                        detail['saturated_fatty_acid'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Fatty acids, total saturated', 'saturated_fatty_acid') * portion_multiplier
+                        detail['monounsaturated_fatty_acid'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Fatty acids, total monounsaturated', 'monounsaturated_fatty_acid') * portion_multiplier
+                        detail['polyunsaturated_fatty_acid'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Fatty acids, total polyunsaturated', 'polyunsaturated_fatty_acid') * portion_multiplier
+                        detail['cholesterol'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Cholesterol', 'cholesterol') * portion_multiplier
+                        detail['calcium'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Calcium, Ca', 'calcium') * portion_multiplier
 
-                detail = {}
-                if(nutrient['status'] == 200):
-                    detail['energy'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Energy', 'energy') * portion_multiplier
-                    detail['protein'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Protein', 'protein') * portion_multiplier
-                    detail['carbohydrate'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Carbohydrate, by difference', 'carbohydrate') * portion_multiplier
-                    detail['sugars'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Sugars, Total', 'sugars') * portion_multiplier
-                    detail['fiber'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Fiber, total dietary', 'fiber') * portion_multiplier
-                    detail['fat'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Total lipid (fat)', 'fat') * portion_multiplier
-                    detail['saturated_fatty_acid'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Fatty acids, total saturated', 'saturated_fatty_acid') * portion_multiplier
-                    detail['monounsaturated_fatty_acid'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Fatty acids, total monounsaturated', 'monounsaturated_fatty_acid') * portion_multiplier
-                    detail['polyunsaturated_fatty_acid'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Fatty acids, total polyunsaturated', 'polyunsaturated_fatty_acid') * portion_multiplier
-                    detail['cholesterol'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Cholesterol', 'cholesterol') * portion_multiplier
-                    detail['calcium'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Calcium, Ca', 'calcium') * portion_multiplier
+                        if detail['energy'] == 0:
+                            energy_other = self.get_nutrient_value(nutrient['foodNutrients'], 'Energy (Atwater General Factors)', 'energy') * portion_multiplier
+                            if(energy_other != 0):
+                                detail['energy'] = energy_other
 
-                    if detail['energy'] == 0:
-                        energy_other = self.get_nutrient_value(nutrient['foodNutrients'], 'Energy (Atwater General Factors)', 'energy') * portion_multiplier
-                        if(energy_other != 0):
-                            detail['energy'] = energy_other
-
-                # Update total nutrients
-                for key in total_detail:
-                    if key in detail:
-                        total_detail[key] += detail[key]
-        except:
-            pass
+                    # Update total nutrients
+                    for key in total_detail:
+                        if key in detail:
+                            total_detail[key] += detail[key]
+                    
+                    num_food += 1
+            except:
+                pass
+        
+        if(num_food == 0):
+            return {
+                'energy': None,
+                'protein': None,
+                'carbohydrate': None,
+                'sugars': None,
+                'fiber': None,
+                'fat': None,
+                'saturated_fatty_acid': None,
+                'monounsaturated_fatty_acid': None,
+                'polyunsaturated_fatty_acid': None,
+                'cholesterol': None,
+                'calcium': None
+            }
         
         return total_detail
 
-    def get_vigorous_activity_minute(self, activities):
-        
-        total_minutes = None
+    def get_vigorous_activity_minute(self, activities_list, window_day=30):
+        if(len(activities_list) < window_day):
+            window_day = len(activities_list)
+
+        total_minutes = 0
+        i = 0
         try:
-            for i, activity in enumerate(activities):
-                if(i == 0):
-                    total_minutes = 0
-                if(activity['heartRate'] > 142):
-                    total_minutes += activity['duration']
+            for activities in activities_list[-window_day:]:
+                if(activities == None):
+                    continue
+
+                # If activities is not null
+                i += 1
+                for activity in activities:
+                    if(activity['heartRate'] > 142):
+                        total_minutes += activity['duration']
         except:
             pass
         
-        return total_minutes
+        # to prevent division by 0
+        if(i == 0):
+            i = 1
+        return total_minutes/i
     
     def get_bmi(self, weight, height):
         if(weight == None or height == None):
             return None
         return float(weight)/((float(height)/100)**2)
     
-    def is_having_pain(self, symptoms_list):
-        if(len(symptoms_list) == 0):
-            return 9
-
-        for symptoms in symptoms_list:
+    def is_having_pain(self, symptoms_list, window_day=7):
+        
+        if(len(symptoms_list) < window_day):
+            window_day = len(symptoms_list)
+        
+        for symptoms in symptoms_list[-window_day:]:
             try:
                 for symptom in symptoms:
-                    if symptom.get('name') == 'Nyeri Dada':
+                    if 'Nyeri Dada' in symptom.get('symptoms'):
                         return 1
             except:
                 pass
         
-        return 2
+        return 0
 
     def preprocess(self, data_json):
         # Take data in json string then preprocess and output np array
@@ -309,8 +336,8 @@ class PreProcess:
 
         
         smoking = {
-            'Quest22_SMQ890': 1 if data_raw['have_smoked'] else 2,
-            'Quest22_SMQ900': 1 if data_raw['have_smoked_ecigarette'] else 2
+            'Quest22_SMQ890': 1 if data_raw['have_smoked'] else 0,
+            'Quest22_SMQ900': 1 if data_raw['have_smoked_ecigarette'] else 0
         }
 
         sleep = {
