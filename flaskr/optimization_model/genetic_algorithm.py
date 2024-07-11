@@ -185,7 +185,7 @@ class GA:
             lifestyle_dict['lifestyle'][ls_component] = {
                 'description': lifestyle_description[ls_component],
                 'currentValue': self.__genes[ls_component][str(current_ls_value)],
-                'recommendedValueInterval': self.__genes[ls_component][str(value)] if not (ls_component == "Quest22_SMQ890" or ls_component == "Quest22_SMQ890") else 0,
+                'recommendedValueInterval': 0 if (ls_component == "Quest22_SMQ890" or ls_component == "Quest22_SMQ900") else self.__genes[ls_component][str(value)],
                 'codeValue': str(value),
                 'comparison': existingComparison,
                 'changeStatus': f'{changed}'

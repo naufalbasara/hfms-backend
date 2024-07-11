@@ -58,9 +58,15 @@ class PreProcess:
         else:
             return 0
 
-    def get_nutrient_value(self, nutrients, nutrient_name, nutrient_name_simple):
+    def get_nutrient_value(self, nutrients, nutrient_name, nutrient_name_simple, regex=False):
         try:
-            nutrient = nutrients[nutrient_name]
+            if(regex==False):
+                nutrient = nutrients[nutrient_name]
+            else:
+                for key in nutrients.keys():
+                    if nutrient_name.lower() in key.lower():
+                        nutrient = nutrients[key]
+                        break
 
             # Standardize Metrics of Measurement for each nutrients
             if nutrient_name_simple in ['energy']:
@@ -223,12 +229,28 @@ class PreProcess:
         for consumptions in consumptions_list:
             try:
                 for consumption in consumptions:
-                    # Translate Food name from id to en
-                    food_name = self.translate(consumption['name'])
-                    food_name = re.sub(r'[,\.;&/\\]', ' ', food_name)
+                    try:
+                        with open('ext/precalculated_nutrient.json', 'r') as f:
+                            precalc_nutrient = json.loads(f)
+                    except:
+                        precalc_nutrient = ""
 
-                    # Get Nutrient Detail From USDA Food Data Central
-                    nutrient = self.get_nutrient_summary(food_name)
+                    nutrient = None
+                    for key, val in precalc_nutrient.items():
+                        try:
+                            if key == consumption['name']:
+                                nutrient = val
+                        except:
+                            pass
+
+                    if(nutrient == None):
+                        # Translate Food name from id to en
+                        food_name = self.translate(consumption['name'])
+                        food_name = re.sub(r'[,\.;&/\\]', ' ', food_name)
+
+                        # Get Nutrient Detail From USDA Food Data Central
+                        nutrient = self.get_nutrient_summary(food_name)
+
                     print(food_name, nutrient)
 
                     # Nutrient from FDA is for every 100 gr/ml food
@@ -242,7 +264,7 @@ class PreProcess:
                         detail['energy'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Energy', 'energy') * portion_multiplier
                         detail['protein'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Protein', 'protein') * portion_multiplier
                         detail['carbohydrate'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Carbohydrate, by difference', 'carbohydrate') * portion_multiplier
-                        detail['sugars'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Sugars, Total', 'sugars') * portion_multiplier
+                        detail['sugars'] = self.get_nutrient_value(nutrient['foodNutrients'], 'sugars', 'sugars', regex=True) * portion_multiplier
                         detail['fiber'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Fiber, total dietary', 'fiber') * portion_multiplier
                         detail['fat'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Total lipid (fat)', 'fat') * portion_multiplier
                         detail['saturated_fatty_acid'] = self.get_nutrient_value(nutrient['foodNutrients'], 'Fatty acids, total saturated', 'saturated_fatty_acid') * portion_multiplier
@@ -328,7 +350,7 @@ class PreProcess:
 
     def preprocess(self, data_json):
         # Take data in json string then preprocess and output np array
-        data_raw = json.loads(data_json)
+        data_raw = data_json
 
         age = {
             'Demog1_RIDAGEYR': self.get_age(data_raw['birth_date'])

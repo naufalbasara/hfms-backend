@@ -292,7 +292,7 @@ def app_recommendation(version):
         request_data = request.get_json()
         user_id = request_data.get('user_id', None)
         if user_id == None:
-            pipeline = AppPreprocess()
+            pipeline = PreProcess()
             cleaned_data = pipeline.preprocess(request_data)
         else:
             firebase = FireBase('PulseWise_secret.json')
@@ -305,9 +305,7 @@ def app_recommendation(version):
                     'timeGenerated': str(date.today()),
                     'timeTaken': f'{time.time() - time_start} s'
                 }, 400
-            print('firebase user_id res ===> ', user_data)
             cleaned_data = preprocess.preprocess(user_data)
-            print('preprocess res ===> ', cleaned_data)
 
             if cleaned_data.get('Dieta1_DR1TKCAL', None) == None:
                 return {
