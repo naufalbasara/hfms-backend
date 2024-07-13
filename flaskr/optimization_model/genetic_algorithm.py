@@ -113,6 +113,7 @@ class GA:
 
     def preprocess_pipeline(self, scaler_file_path:str):
         ordered_lifestyle_col = [*self.__current_lifestyle.keys()]
+        print('lifestyle cols ===> ', ordered_lifestyle_col)
 
         lifestyle=np.expand_dims(np.array([*self.__current_lifestyle.values()]), axis=0)
         characteristic = self.__characteristic
@@ -126,6 +127,7 @@ class GA:
             except Exception as e:
                 print(e)
                 discreted_values.append(ls_value)
+        print('lifestyle cols (val) ===> ', discreted_values)
 
         lifestyle = np.expand_dims(np.array(discreted_values).astype(float), axis=0)
         for idx, col in enumerate(self.__current_lifestyle.keys()):
@@ -166,7 +168,7 @@ class GA:
         ls_description_path = f'optimization_model/metadata/{"app/" if self.__for_app else ""}v{self.__version}/v{self.__version}_lifestyle_description.json'
         with open(ls_description_path, 'r') as json_file:
             lifestyle_description = json.load(json_file)
-
+        lifestyle_dict['lifestyle'] = []
         for index, ls_component in enumerate(self.__current_lifestyle.keys()):
             value = lifestyle[0][index]
             value = int(value) if str(int(value)) in self.__genes[ls_component] else float(value)
@@ -182,14 +184,15 @@ class GA:
 
             changed = self.__current_lifestyle_arr[0][index] != lifestyle[0, index]
 
-            lifestyle_dict['lifestyle'][ls_component] = {
+            lifestyle_dict['lifestyle'].append({
+                'variable': ls_component,
                 'description': lifestyle_description[ls_component],
                 'currentValue': self.__genes[ls_component][str(current_ls_value)],
-                'recommendedValueInterval': 0 if (ls_component == "Quest22_SMQ890" or ls_component == "Quest22_SMQ900") else self.__genes[ls_component][str(value)],
+                'recommendedValueInterval': str(0) if (ls_component == "Quest22_SMQ890" or ls_component == "Quest22_SMQ900") else self.__genes[ls_component][str(value)],
                 'codeValue': str(value),
                 'comparison': existingComparison,
                 'changeStatus': f'{changed}'
-                }
+                })
         lifestyle_dict['currentRisk'] = self.__current_risk
         lifestyle_dict['currentRiskThresh'] = round(min((self.__current_risk*0.5)/0.20375, 100), 5)
         lifestyle_dict['riskAfterRecommendation'] = ls_risk
