@@ -48,7 +48,7 @@ class PreProcess:
         if(sleep_time > wake_time):
             wake_time += (24*60) # Add 24 hour to wake time to calculate sleep duraton
         
-        return wake_time - sleep_time
+        return (wake_time - sleep_time)/60
 
     def get_portion(self, portion_string):
         portion = re.search(r'\b\d+\b', portion_string)

@@ -160,7 +160,5 @@ class FireBase:
         data['sleep_time'] = user_data.get('sleepTime', None)
         data['wake_time'] = user_data.get('wakeTime', None)
 
-        data
-
         return data
     

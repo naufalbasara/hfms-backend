@@ -78,7 +78,6 @@ def predict(version):
     metadata = get_metadata_version(version, call_type='fp')
     result_json = {}
     time_start = time.time()
-    model = load_model(metadata['model_path'])
     
     try:
         with open(metadata['columns_order_path'], 'r') as json_file:
@@ -95,6 +94,7 @@ def predict(version):
         return result_json, 400
     
     if request.method == 'POST':
+        model = load_model(metadata['model_path'])
         # load data from form / http post request
         characteristic = {}
         lifestyle = {}
@@ -290,15 +290,19 @@ def app_recommendation(version):
         characteristic = {}
         lifestyle = {}
         request_data = request.get_json()
+        print('request_data ===> ', request_data)
         user_id = request_data.get('user_id', None)
-        if user_id == None:
+        print(f'request from {user_id}')
+        if (user_id == None) or (user_id == ''):
+            print('preprocess with preprocess_webserver')
             pipeline = PreProcess()
             cleaned_data = pipeline.preprocess(request_data)
         else:
+            print('preprocess with preprocess for app')
             firebase = FireBase('PulseWise_secret.json')
             preprocess = AppPreprocess()
             user_data = firebase.get_data(user_id)
-            if user_data.get('sleep_time', None) == None:
+            if (user_data.get('sleep_time', None) == '') or (user_data.get('sleep_time', None) == None) :
                 return {
                     'result': f'No data input from user {user_id}',
                     'status': 400,
@@ -306,10 +310,10 @@ def app_recommendation(version):
                     'timeTaken': f'{time.time() - time_start} s'
                 }, 400
             cleaned_data = preprocess.preprocess(user_data)
-
-            if cleaned_data.get('Dieta1_DR1TKCAL', None) == None:
+            print('cleaned_data ===> ',cleaned_data)
+            if cleaned_data == None:
                 return {
-                    'result': 'No diet input',
+                    'result': 'Bad input, please complete your profile',
                     'status': 400,
                     'timeGenerated': str(date.today()),
                     'timeTaken': f'{time.time() - time_start} s'
@@ -393,10 +397,10 @@ def app_recommendation(version):
 def app_predict(version):
     metadata = get_metadata_version(version, call_type='app')
     response_json = {}
-    model = load_model(metadata['model_path'])
     time_start = time.time()
 
     if request.method == 'POST':
+        model = load_model(metadata['model_path'])
         try:
             with open(metadata['columns_order_path'], 'r') as json_file:
                 json_f = str(json_file.read()).strip("'<>() ").replace('\'', '\"')

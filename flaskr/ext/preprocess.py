@@ -49,7 +49,7 @@ class PreProcess:
         if(sleep_time > wake_time):
             wake_time += (24*60) # Add 24 hour to wake time to calculate sleep duraton
         
-        return wake_time - sleep_time
+        return (wake_time - sleep_time)/60
 
     def get_portion(self, portion_string):
         try:
@@ -61,14 +61,14 @@ class PreProcess:
                 return 150
         except:
             pass
-        
+
         try:
             portion = re.search(r'\b\d+\b', portion_string)
             if portion:
                 return portion.group()
         except:
             pass
-        
+
         return 0
 
     def get_nutrient_value(self, nutrients, nutrient_name, nutrient_name_simple, regex=False):
@@ -134,7 +134,7 @@ class PreProcess:
                     list_of_key = list(set(nutrient['foodNutrients'])+set(val['foodNutrients']))
                     for key in list_of_key:
                         nutrient['foodNutrients'][key] = nutrient['foodNutrients'].get(key, 0) + val['foodNutrients'].get(key, 0)
-                    
+                        
                 return nutrient
         except Exception as e:
             pass
@@ -200,7 +200,6 @@ class PreProcess:
                     list_of_key = list(set(nutrient['foodNutrients'])+set(val['foodNutrients']))
                     for key in list_of_key:
                         nutrient['foodNutrients'][key] = nutrient['foodNutrients'].get(key, 0) + val['foodNutrients'].get(key, 0)
-                    
                 return nutrient
         except Exception as e:
             pass
@@ -244,8 +243,9 @@ class PreProcess:
                 for consumption in consumptions:
                     try:
                         with open('ext/precalculated_nutrient.json', 'r') as f:
-                            precalc_nutrient = json.loads(f)
+                            precalc_nutrient = json.load(f)
                     except:
+                        print('=== precalc not found ===')
                         precalc_nutrient = ""
 
                     nutrient = None
@@ -363,7 +363,20 @@ class PreProcess:
 
     def preprocess(self, data_json):
         # Take data in json string then preprocess and output np array
-        data_raw = data_json
+        print(data_json)
+        data_raw = {
+            'birth_date': None, 'have_smoked': None, 'have_smoked_ecigarette': None,
+            'sleep_time': None, 'wake_time': None, 'symptoms': None, 'consumptions': None,
+            'activities': None, 'body_weight': None, 'body_height': None,
+            'systolic_pressure': None,'diastolic_pressure': None
+                    }
+
+        for col in data_raw.keys():
+            if col not in data_json:
+                return None
+            if data_json[col] == None:
+                return None
+            data_raw[col] = data_json.get(col)
 
         age = {
             'Demog1_RIDAGEYR': self.get_age(data_raw['birth_date'])
