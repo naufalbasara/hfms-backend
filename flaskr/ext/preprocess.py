@@ -52,11 +52,24 @@ class PreProcess:
         return wake_time - sleep_time
 
     def get_portion(self, portion_string):
-        portion = re.search(r'\b\d+\b', portion_string)
-        if portion:
-            return portion.group()
-        else:
-            return 0
+        try:
+            if(portion_string.lower() == "kecil"):
+                return 50
+            if(portion_string.lower() == "sedang"):
+                return 100
+            if(portion_string.lower() == "besar"):
+                return 150
+        except:
+            pass
+        
+        try:
+            portion = re.search(r'\b\d+\b', portion_string)
+            if portion:
+                return portion.group()
+        except:
+            pass
+        
+        return 0
 
     def get_nutrient_value(self, nutrients, nutrient_name, nutrient_name_simple, regex=False):
         try:
@@ -238,7 +251,7 @@ class PreProcess:
                     nutrient = None
                     for key, val in precalc_nutrient.items():
                         try:
-                            if key == consumption['name']:
+                            if key.lower().strip() == consumption['name'].lower().strip():
                                 nutrient = val
                         except:
                             pass
