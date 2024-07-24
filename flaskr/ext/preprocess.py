@@ -238,6 +238,7 @@ class PreProcess:
             'calcium': 0
         }
         num_food = 0
+        num_day = 0
         for consumptions in consumptions_list:
             try:
                 for consumption in consumptions:
@@ -297,6 +298,7 @@ class PreProcess:
                             total_detail[key] += detail[key]
                     
                     num_food += 1
+                num_day += 1
             except:
                 pass
         
@@ -314,6 +316,10 @@ class PreProcess:
                 'cholesterol': None,
                 'calcium': None
             }
+        
+        if(num_day != 0):
+            for key in total_detail:
+                total_detail[key] = total_detail[key]/num_day
         
         return total_detail
 
