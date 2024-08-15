@@ -160,5 +160,11 @@ class FireBase:
         data['sleep_time'] = user_data.get('sleepTime', None)
         data['wake_time'] = user_data.get('wakeTime', None)
 
+        try:
+            if(data['body_height'] == None):
+                data['body_height'] = user_data.get('bodyHeight', None)
+        except:
+            pass
+
         return data
     

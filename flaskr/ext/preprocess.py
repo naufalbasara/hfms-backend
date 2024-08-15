@@ -20,10 +20,21 @@ class PreProcess:
         except Exception as e:
             print("googletrans error:", e)
             return name
+    
+    def convert_to_date(self, date_text):
+        # Remove day name from date string
+        date_text = re.sub(r'.*, ', '', date_text).strip()
+        month_encode = {"Januari": "1", "Februari": "2", "Maret": "3", "April": "4", "Mei": "5", "Juni": "6", "Juli": "7", "Agustus": "8", "September": "9", "Oktober": "10", "November": "11", "Desember": "12",
+                        "January": "1", "February": "2", "March": "3", "April": "4", "May": "5", "June": "6", "July": "7", "August": "8", "September": "9", "October": "10", "November": "11", "December": "12"}
+        date_arr = date_text.split(" ")
+        date_arr[1] = month_encode[date_arr[1]]
+        date_obj = datetime.strptime(" ".join(date_arr), "%d %m %Y").date()
+
+        return date_obj
 
     def get_age(self, birth_date_str):
         try:
-            birth_date = datetime.strptime(birth_date_str, "%d %B %Y").date()
+            birth_date = self.convert_to_date(birth_date_str)
             today = date.today()
 
             age = today.year - birth_date.year
@@ -32,7 +43,8 @@ class PreProcess:
                 age -= 1
 
             return age
-        except:
+        except Exception as error:
+            print(f'failed getting age due to: {error}')
             return None
 
     def timestamp_to_int(self, time_string):
@@ -238,22 +250,27 @@ class PreProcess:
             'calcium': 0
         }
         num_food = 0
+        num_day = 0
+
         for consumptions in consumptions_list:
+            if consumptions == None:
+                continue
             try:
                 for consumption in consumptions:
                     try:
                         with open('ext/precalculated_nutrient.json', 'r') as f:
                             precalc_nutrient = json.load(f)
-                    except:
-                        print('=== precalc not found ===')
-                        precalc_nutrient = ""
+                    except Exception as e:
+                        print(f'=== error at precalc 1 {e} ===')
+                        precalc_nutrient = {}
 
                     nutrient = None
                     for key, val in precalc_nutrient.items():
                         try:
                             if key.lower().strip() == consumption['name'].lower().strip():
                                 nutrient = val
-                        except:
+                        except Exception as e:
+                            print(f'=== error at precalc 2 {e} ===')
                             pass
 
                     if(nutrient == None):
@@ -263,8 +280,6 @@ class PreProcess:
 
                         # Get Nutrient Detail From USDA Food Data Central
                         nutrient = self.get_nutrient_summary(food_name)
-
-                    print(food_name, nutrient)
 
                     # Nutrient from FDA is for every 100 gr/ml food
                     try:
@@ -297,7 +312,9 @@ class PreProcess:
                             total_detail[key] += detail[key]
                     
                     num_food += 1
-            except:
+                num_day += 1
+            except Exception as error:
+                print(f'getting nutrient details failed due to:\n\t{error}')
                 pass
         
         if(num_food == 0):
@@ -314,6 +331,9 @@ class PreProcess:
                 'cholesterol': None,
                 'calcium': None
             }
+        if(num_day != 0):
+            for key in total_detail:
+                total_detail[key] = total_detail[key]/num_day
         
         return total_detail
 
@@ -404,7 +424,7 @@ class PreProcess:
         consumption = data_raw['consumptions']
         if(consumption == None):
             consumption = []
-
+        print('getting dietary details...')
         dietary_detail = self.get_consumption_detail(consumption)
         dietary = {
             'Dieta1_DR1TKCAL': dietary_detail['energy'],

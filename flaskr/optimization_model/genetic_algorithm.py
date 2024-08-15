@@ -1,4 +1,4 @@
-import numpy as np, os, joblib, pandas as pd, random, sklearn, json, time
+import numpy as np, os, joblib, pandas as pd, random, sklearn, json, time, tensorflow as tf
 from datetime import date
 
 class GA:
@@ -26,7 +26,7 @@ class GA:
         self.__population_size = population_size
         self.__generations = generations
         self.__mutation_probability = mutation_probability
-        self.__model = joblib.load(model_path)
+        self.__model = tf.keras.models.load_model(model_path)
         self.__for_app = for_app
 
         # preprocess characteristic and lifestyle
@@ -154,13 +154,13 @@ class GA:
     def get_best_lifestyle(self):
         return self.__translate_lifestyle(self.__best_lifestyle, self.__best_result), self.__best_result
     
-    def __comparison(self, existing_ls:pd.Interval, recommendation_result:pd.Interval) -> str:
+    def __comparison(self, existing_ls, recommendation_result) -> str:
         if recommendation_result == existing_ls:
-            return f'({recommendation_result.left}-{recommendation_result.right})'
+            return f'='
         elif recommendation_result > existing_ls:
-            return f'{">" if existing_ls.closed=="right" or existing_ls.closed=="both" else ">="} {existing_ls.right} ({recommendation_result.left}-{recommendation_result.right})'
+            return '>'
             
-        return f'{"<" if existing_ls.closed=="left" or existing_ls.closed=="both" else "<="} {existing_ls.left} ({recommendation_result.left}-{recommendation_result.right})'
+        return '<'
 
     def __translate_lifestyle(self, lifestyle:np.ndarray, ls_risk:float):
         lifestyle_dict = {}
@@ -177,10 +177,16 @@ class GA:
             if type(self.__genes[ls_component][str(current_ls_value)]) == str:
                 existing_ls = self.__to_interval(self.__genes[ls_component][str(current_ls_value)])
                 recommendation_result = self.__to_interval(self.__genes[ls_component][str(value)])
-                
-                existingComparison = self.__comparison(existing_ls, recommendation_result)
             else:
-                existingComparison = f'{current_ls_value} -> {value}'
+                existing_ls = self.__genes[ls_component][str(current_ls_value)]
+                recommendation_result = self.__genes[ls_component][str(value)]
+                
+            existingComparison = self.__comparison(existing_ls, recommendation_result)
+            existingComparisonStr = 'Tidak ada perubahan'
+            if existingComparison == '<':
+                existingComparisonStr = f'Kurangi {lifestyle_description[ls_component]}'
+            elif existingComparison == '>':
+                existingComparisonStr = f'Tingkatkan {lifestyle_description[ls_component]}'
 
             changed = self.__current_lifestyle_arr[0][index] != lifestyle[0, index]
 
@@ -188,9 +194,9 @@ class GA:
                 'variable': ls_component,
                 'description': lifestyle_description[ls_component],
                 'currentValue': self.__genes[ls_component][str(current_ls_value)],
-                'recommendedValueInterval': str(0) if (ls_component == "Quest22_SMQ890" or ls_component == "Quest22_SMQ900") else self.__genes[ls_component][str(value)],
+                'recommendedValueInterval': f'{existingComparisonStr} {str(0) if (ls_component == "Quest22_SMQ890" or ls_component == "Quest22_SMQ900") else self.__genes[ls_component][str(value)]}',
                 'codeValue': str(value),
-                'comparison': existingComparison,
+                'comparison': existingComparisonStr,
                 'changeStatus': f'{changed}'
                 })
         lifestyle_dict['currentRisk'] = self.__current_risk
@@ -206,7 +212,7 @@ class GA:
 
     def __predict(self, lifestyle:np.ndarray):
         data = self.__get_whole_data(lifestyle)
-        result = round(self.__model.predict_proba(data)[0, 1]*100, 15)
+        result = round(self.__model.predict(data, verbose=0)[0, 1]*100, 15)
 
         return result
 

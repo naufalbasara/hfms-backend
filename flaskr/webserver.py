@@ -1,6 +1,7 @@
 import numpy as np, json, warnings, time, os
 import optimization_model.genetic_algorithm as optimization
 
+from datetime import datetime
 from flask import Flask, request
 from flask_cors import CORS, cross_origin
 from datetime import date
@@ -215,7 +216,7 @@ def recommendation(version):
                 current_lifestyle=current_lifestyle,
                 population_size=30,
                 generations=30,
-                mutation_probability=0.1,
+                mutation_probability=0.2,
                 model_path=metadata['model_path'],
                 scaler_path=metadata['scaler_path'],
                 for_app=False,
@@ -290,7 +291,7 @@ def app_recommendation(version):
         characteristic = {}
         lifestyle = {}
         request_data = request.get_json()
-        print('request_data ===> ', request_data)
+        print(f' {datetime.now()} request_data ===> ', request_data)
         user_id = request_data.get('user_id', None)
         print(f'request from {user_id}')
         if (user_id == None) or (user_id == ''):
@@ -311,7 +312,7 @@ def app_recommendation(version):
                 }, 400
             cleaned_data = preprocess.preprocess(user_data)
             print('cleaned_data ===> ',cleaned_data)
-            if cleaned_data == None:
+            if cleaned_data == None or cleaned_data.get('Dieta1_DR1TKCAL', None) == None:
                 return {
                     'result': 'Bad input, please complete your profile',
                     'status': 400,

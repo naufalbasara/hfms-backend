@@ -40,24 +40,24 @@ def box_plot_performance():
     """
     print("Testing different populations size parameter")
     result_data = {
-    'Population Size': [],
+    'Generation': [],
     'Risk Reduction': []
     }
-    for pop_size in param_grid['population_size']:
+    for gener in param_grid['generation']:
         for i in range(3):
             res = requests.post(endpoint, json=data_json, headers={
                 'Mutation-Rate': '0.1',
-                'Population-Size': f'{pop_size}',
-                'Generations': '30'
+                'Population-Size': '30',
+                'Generations': f'{gener}'
             })
             riskReduction = res.json().get('recommendationResult', None).get('riskReduction', None)
             result_data['Risk Reduction'].append(riskReduction)
-            result_data['Population Size'].append(pop_size)
+            result_data['Generation'].append(gener)
 
-    sns.boxplot(x='Population Size', y='Risk Reduction', data=pd.DataFrame(result_data))
-    plt.title('Box Plot of Risk Reduction for Different Population Sizes')
+    sns.boxplot(x='Generation', y='Risk Reduction', data=pd.DataFrame(result_data))
+    plt.title('Box Plot of Risk Reduction for Different Generations')
     plt.tight_layout()
-    plt.savefig(os.path.join(base_path, f'tests/test_result/parameter_benchmarking/box_plot_performance.png'))
+    plt.savefig(os.path.join(base_path, f'tests/test_result/box_plot_performance.png'))
 
     return
 
@@ -133,7 +133,7 @@ if __name__ == '__main__':
 
     # Run test here by uncomment.
     # convergence_generation()
-    # box_plot_performance()
+    box_plot_performance()
     # scatter_tradeoff()
 
 
