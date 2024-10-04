@@ -1,6 +1,6 @@
 # Lifestyle Recommendation System for Heart Failure Patient
 
-Lifestyle recommendation system that generate optimal lifestyle for personalized heart failure patients using given characteristics data (e.g. age, body metrics, blood pressure, etc.) and existing lifestyle (e.g. sleep duration, diet, and physical activities) to reduce the severity of the disease.
+Lifestyle recommendation system that generate optimal lifestyle for personalized heart failure patients using given characteristics data (e.g. age, body metrics, blood pressure, etc.) and existing lifestyle (e.g. sleep duration, diet, and physical activities) to reduce the severity of the disease. This project reference based on proof-of-concept by [Chi et al., 2012](https://www.sciencedirect.com/science/article/pii/S1532046412001086)
 
 ## Why
 
