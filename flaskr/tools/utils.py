@@ -1,4 +1,4 @@
-import joblib, sklearn, numpy as np, pandas as pd, json, os, re
+import joblib, sklearn, numpy as np, pandas as pd, json, os, re, tensorflow as tf
 
 def get_rootdir() -> str:
     cwd = os.path.abspath(os.getcwd())
@@ -19,9 +19,13 @@ def get_certificate() -> str:
 
 def load_model(model_path:str):
     """path to saved model with h5 format"""
-    model = joblib.load(model_path)
-    # model = keras.models.load_model(model_path)
-
+    try:
+        if model_path.split(".")[-1] == "h5":
+            model = tf.keras.models.load_model(model_path)
+        else:
+            model = joblib.load(model_path)
+    except Exception as error:
+        print(error)
     return model
 
 def to_interval(interval_str:str) -> pd.Interval:

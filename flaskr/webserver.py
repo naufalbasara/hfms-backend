@@ -49,7 +49,7 @@ def get_metadata_version(version, call_type:str) -> dict:
                 'scaler_path': f'scaler_model/app/{version_text}_standard_scaler.gz',
                 'columns_order_path': f'optimization_model/metadata/app/{version_text}/{version_text}_columns_order.json',
                 'genes_path': f'optimization_model/metadata/app/{version_text}/{version_text}_variable_discrete_value.json',
-                'model_path': 'prediction_model/random_forest_app.joblib'
+                'model_path': 'prediction_model/model_cnn_proper_apps_v3.h5'
             }
         }
     }
@@ -126,7 +126,7 @@ def predict(version):
         # preprocess data through data pipeline
         try:
             whole_data = preprocess_pipeline(metadata['scaler_path'], characteristic, lifestyle, version=version)
-            result = model.predict_proba(whole_data, verbose=0)
+            result = model.predict(whole_data, verbose=0)
             result_json['result'] = {
                 'label': f"{np.argmax(result)}",
                 'text': f"{'Not having heart failure.' if np.argmax(result)== 0 else 'Likely to have heart failure.'}"
