@@ -109,3 +109,7 @@ docker run -it -d naufalbasara/hfms-backend:deployment-appv4 -p :8080
 ## Contributing
 
 Contributions are welcome (refactoring, adding feature, fixing bugs). No contributions guideline as long as its useful and not violating the main project.
+
+## Notes
+
+This project is not medically tested, proof-of-concept based to combined deep learning and heuristic algorithm. The target user for testing is random and mainly college students.
