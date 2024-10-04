@@ -2,6 +2,8 @@
 
 Lifestyle recommendation system that generate optimal lifestyle for personalized heart failure patients using given characteristics data (e.g. age, body metrics, blood pressure, etc.) and existing lifestyle (e.g. sleep duration, diet, and physical activities) to reduce the severity of the disease. This project reference based on proof-of-concept by [Chi et al., 2012](https://www.sciencedirect.com/science/article/pii/S1532046412001086)
 
+[Presentation slides](https://docs.google.com/presentation/d/1Samwo7hot0BWb9RJjPe1JK6DsWZUrgUKu5OCgd-6-os/edit?usp=sharing) (in Bahasa Indonesia)
+
 ## Why
 
 Cardiovascular disease is a group of disorders of the heart and blood vessels. One of the most common heart diseases is coronary heart disease. From the long and expensive medical procedures for patients, at least 50% of heart disease patients require readmission or re-hospitalization. The readmission rate is influenced by several factors, one of which is lifestyle. The focus of this project aims to develop a system that can predict the risk of heart disease and provide optimal lifestyle recommendations to minimize the severity of heart disease. The algorithm used in this study is long short-term memory (LSTM) as a model to predict the risk of heart disease. In addition, genetic algorithms are used as optimization models to determine the recommended lifestyle. These lifestyle recommendations are evaluated based on the results of heart disease risk predictions and take the lifestyle with the lowest risk using an optimization model.
